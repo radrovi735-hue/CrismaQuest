@@ -17,6 +17,7 @@ $dotenv->load();
 // Schema maintenance must never take the public app offline.
 try {
     CrismaQuestBootstrapService::ensureInstalled();
+    CrismaQuestGameBootstrapService::ensureInstalled();
 } catch (Throwable $e) {
     error_log('[CrismaQuest bootstrap] ' . $e->getMessage());
 }
