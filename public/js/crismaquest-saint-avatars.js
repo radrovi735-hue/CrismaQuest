@@ -6,78 +6,29 @@
     // an archival photograph or historical/devotional artwork hosted on Wikimedia Commons.
     // CrismaQuest only applies the shared circular crop/frame in the interface.
     const saints = {
-        'São Carlo Acutis': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/St._Carlo_Acutis.jpg',
-            position: '50% 34%'
-        },
-        'Santa Teresinha do Menino Jesus': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Teresa-de-Lisieux.jpg',
-            position: '50% 35%'
-        },
-        'São Francisco de Assis': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Francis_of_Assisi_-_Cimabue.jpg',
-            position: '50% 28%'
-        },
-        'São Pedro': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Peter_A26043.jpg',
-            position: '50% 28%'
-        },
-        'Santa Faustina Kowalska': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Faustyna_Kowalska.png',
-            position: '50% 30%'
-        },
-        'São João Paulo II': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/JohannesPaul2-portrait.jpg',
-            position: '50% 28%'
-        },
-        'Santa Gianna Beretta Molla': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Gianna_Beretta_Molla_(cropped).jpg',
-            position: '50% 32%'
-        },
-        'Santo Agostinho': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Augustine_by_Philippe_de_Champaigne.jpg',
-            position: '50% 28%'
-        },
-        'Santa Mônica': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sainte_Monique.jpg',
-            position: '50% 28%'
-        },
-        'São José': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Joseph_with_the_Infant_Jesus_by_Guido_Reni,_c_1635.jpg',
-            position: '50% 30%'
-        },
-        'São Vicente de Paulo': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Anonymous_-_Portrait_de_saint_Vincent_de_Paul_(1581-1660)._-_P863_-_Musée_Carnavalet.jpg',
-            position: '50% 28%'
-        },
-        'São Sebastião': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Sebastian_painting.jpg',
-            position: '50% 22%'
-        },
-        'São Paulo': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Almeida_J%C3%BAnior_-_Ap%C3%B3stolo_S%C3%A3o_Paulo%2C_1869.jpg',
-            position: '50% 28%'
-        },
-        'Santa Clara': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Santa_Chiara_d%27Assisi_di_Giovan_Battista_Moroni.jpg',
-            position: '50% 28%'
-        },
-        'Santa Catarina de Sena': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Catherine_of_Siena.jpg',
-            position: '50% 27%'
-        },
-        'São João Bosco': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Portrait_de_Don_Bosco.jpg',
-            position: '50% 28%'
-        },
-        'Santa Teresa de Calcutá': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Mother_Teresa.jpg',
-            position: '50% 28%'
-        },
-        'Santo Antônio': {
-            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Anthony_of_Padua_Sano_di_Pietro.webp',
-            position: '50% 27%'
-        }
+        'São Carlo Acutis': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/St._Carlo_Acutis.jpg', position: '50% 34%' },
+        "Santa Joana d'Arc": { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/John_Everett_Millais_-_Joan_of_Arc.jpg', position: '50% 28%' },
+        'Santa Teresinha do Menino Jesus': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Teresa-de-Lisieux.jpg', position: '50% 35%' },
+        'São Francisco de Assis': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Francis_of_Assisi_-_Cimabue.jpg', position: '50% 28%' },
+        'São Pedro': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Peter_A26043.jpg', position: '50% 28%' },
+        'Santa Faustina Kowalska': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Faustyna_Kowalska.png', position: '50% 30%' },
+        'São João Paulo II': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/JohannesPaul2-portrait.jpg', position: '50% 28%' },
+        'Santa Gianna Beretta Molla': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Gianna_Beretta_Molla_(cropped).jpg', position: '50% 32%' },
+        'Santo Agostinho': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Augustine_by_Philippe_de_Champaigne.jpg', position: '50% 28%' },
+        'Santa Mônica': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sainte_Monique.jpg', position: '50% 28%' },
+        'São José': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Joseph_with_the_Infant_Jesus_by_Guido_Reni,_c_1635.jpg', position: '50% 30%' },
+        'São Vicente de Paulo': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Anonymous_-_Portrait_de_saint_Vincent_de_Paul_(1581-1660)._-_P863_-_Musée_Carnavalet.jpg', position: '50% 28%' },
+        'São Sebastião': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Sebastian_painting.jpg', position: '50% 22%' },
+        'São Paulo': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Almeida_J%C3%BAnior_-_Ap%C3%B3stolo_S%C3%A3o_Paulo%2C_1869.jpg', position: '50% 28%' },
+        'Santa Clara': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Santa_Chiara_d%27Assisi_di_Giovan_Battista_Moroni.jpg', position: '50% 28%' },
+        'Santa Catarina de Sena': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Catherine_of_Siena.jpg', position: '50% 27%' },
+        'São João Bosco': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Portrait_de_Don_Bosco.jpg', position: '50% 28%' },
+        'Santa Teresa de Calcutá': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Mother_Teresa.jpg', position: '50% 28%' },
+        'Santo Antônio': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Anthony_of_Padua_Sano_di_Pietro.webp', position: '50% 27%' },
+        'São Domingos Sávio': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Life_of_Dominic_Savio_(page_6_crop).jpg', position: '50% 30%' },
+        'Beato Pier Giorgio Frassati': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/PIER_GIORGIO_FRASSATI1925.jpg', position: '50% 30%' },
+        'São João Evangelista': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Fran%C3%A7ois_Andr%C3%A9_Vincent_-_Saint_John_the_Evangelist_-_80.6_-_Detroit_Institute_of_Arts.jpg', position: '50% 27%' },
+        'Santo André': { image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_andrew.jpg', position: '50% 28%' }
     };
 
     const normalize = (value) => (value || '').replace(/\s+/g, ' ').trim();
