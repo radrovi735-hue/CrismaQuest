@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS cq_intercessions (
   expires_at DATETIME NOT NULL,
   used_at DATETIME NULL,
   PRIMARY KEY (id),
-  KEY idx_cq_intercession_sender_week (sender_user_id, week_key),
+  UNIQUE KEY uq_cq_intercession_sender_week (sender_user_id, week_key),
   KEY idx_cq_intercession_recipient (recipient_user_id, status, expires_at),
   CONSTRAINT fk_cq_int_class FOREIGN KEY (class_id) REFERENCES ct_classi(id_classe) ON DELETE CASCADE,
   CONSTRAINT fk_cq_int_sender FOREIGN KEY (sender_user_id) REFERENCES ct_utenti(id_utente) ON DELETE CASCADE,
