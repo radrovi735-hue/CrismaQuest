@@ -16,7 +16,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   </div>
 </div>
 
-<div class="cq-teacher-panel">
+<details class="cq-teacher-panel cq-admin-fold"><summary>Criar uma nova missão</summary><div class="cq-admin-fold-body">
   <div class="cq-game-kicker">Criador rápido</div>
   <h2>Nova missão</h2>
   <p>Crie uma missão em menos de dois minutos. Ela pode nascer como rascunho ou já publicada.</p>
@@ -50,9 +50,9 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <label class="cq-builder-check"><input type="checkbox" name="active" value="1"> Publicar agora</label>
     <button type="submit" class="cq-game-primary">Criar missão</button>
   </form>
-</div>
+</div></details>
 
-<div class="cq-teacher-panel">
+<details class="cq-teacher-panel cq-admin-fold"><summary>Pausas da Chama</summary><div class="cq-admin-fold-body">
   <h2>Pausa da Chama</h2>
   <p>Use para recesso, retiro, problema técnico ou situação pastoral. A pausa preserva a sequência e não concede XP.</p>
   <form method="post" action="/docenti/jogo/pausa" class="cq-teacher-pause">
@@ -85,15 +85,19 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
       <?php endforeach; ?>
     </div>
   <?php endif; ?>
-</div>
+</div></details>
 
 <div class="cq-teacher-panel">
   <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
     <div><div class="cq-game-kicker">Programação completa</div><h2><?= count($missions ?? []) ?> missões da temporada</h2></div>
     <small>Duplicatas são criadas desativadas para edição segura.</small>
   </div>
+  <div class="cq-admin-search">
+    <label for="cq-mission-search">Buscar nas missões<input type="search" id="cq-mission-search" placeholder="Título, tema ou tipo de missão" aria-controls="cq-mission-list"></label>
+    <span id="cq-mission-count" aria-live="polite"><?= count($missions ?? []) ?> missões carregadas</span>
+  </div>
   <div class="table-responsive">
-    <table class="cq-teacher-game-table">
+    <table class="cq-teacher-game-table" id="cq-mission-list">
       <thead><tr><th>Cap.</th><th>Etapa</th><th>Missão</th><th>Tipo</th><th>Recompensa</th><th>Abre</th><th>Concl.</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody>
       <?php foreach (($missions ?? []) as $mission): ?>

@@ -23,7 +23,7 @@ final class CrismaQuestGameSetupController
             'title'=>'Instalar Jogo CrismaQuest',
             'status'=>$service->status(),
             'lastStep'=>CrismaQuestGameSetupService::LAST_STEP,
-            'pageStyles'=>['/css/crismaquest-game.css'],
+            'pageStyles'=>['/css/crismaquest-game.css?v=20260910d'],
             'pageScripts'=>[],
             'useMathJax'=>false,
         ], 'mainDocLayout');

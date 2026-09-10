@@ -26,3 +26,24 @@
 .cq-recess{display:flex;gap:14px;align-items:center;background:#eef4ef;border-color:#c9ddce}.cq-recess>i{font-size:1.8rem;color:#2f6f4f}.cq-recess p{margin:.25rem 0 0}.cq-muted{color:#6d7677}.cq-empty-game{text-align:center}.cq-empty-game>i{font-size:2rem;color:#2f6f4f}.cq-empty-game h3{font-family:Georgia,serif;margin:.6rem 0}
 .cq-teacher-game-table{width:100%;border-collapse:collapse;font-size:.84rem}.cq-teacher-game-table th,.cq-teacher-game-table td{padding:9px;border-bottom:1px solid #e7dcc6;vertical-align:top}.cq-teacher-game-table th{text-align:left;color:#52676f}.cq-teacher-actions{display:flex;flex-wrap:wrap;gap:6px}.cq-teacher-actions button{border:0;border-radius:9px;padding:6px 9px;font-size:.76rem;font-weight:800}.cq-teacher-panel{background:#fffaf1;border:1px solid #e4d7bf;border-radius:18px;padding:18px;margin-bottom:16px}.cq-teacher-panel h2{font-family:Georgia,serif}.cq-teacher-pause{display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:8px}.cq-teacher-pause input{min-height:42px;border:1px solid #d4c5aa;border-radius:10px;padding:0 10px}.cq-teacher-pause button{border:0;border-radius:10px;background:#8b2433;color:#fff;font-weight:800;padding:0 14px}
 @media(max-width:800px){.cq-game-shell{padding:14px 12px 100px}.cq-game-hero{flex-direction:column;padding:20px;border-radius:22px}.cq-game-stats{width:100%;min-width:0}.cq-game-two,.cq-chest-grid{grid-template-columns:1fr}.cq-badge-grid{grid-template-columns:repeat(2,1fr)}.cq-teacher-pause{grid-template-columns:1fr}.cq-mission-meta{flex-direction:column}.cq-inline-form{grid-template-columns:1fr}}
+
+/* Final integration: readable controls in the light teacher panels. */
+.cq-game-primary,.cq-game-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.cq-game-primary[disabled],.cq-game-secondary[disabled]{opacity:.55;cursor:default}
+.cq-game-card .cq-game-kicker,.cq-teacher-panel .cq-game-kicker{color:#854435}
+.cq-game-card .cq-game-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cq-game-card .cq-game-stats>div{grid-template-columns:1fr;background:#f4ead8;border-color:#ddccad;gap:5px;padding:16px}
+.cq-game-card .cq-game-stats strong{font-size:1.6rem;line-height:1.2}
+.cq-game-card .cq-game-stats span{color:#54635d;font-size:.8rem}
+.cq-builder-grid,.cq-edit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.cq-builder-grid label{display:grid;gap:6px;color:#344b50;font-weight:600;font-size:.86rem;min-width:0}
+.cq-builder-grid input,.cq-builder-grid select,.cq-builder-grid textarea,.cq-edit-grid input,.cq-edit-grid select,.cq-edit-grid textarea,.cq-teacher-pause select{width:100%;min-width:0;min-height:44px;border:1px solid #d8c9ae;border-radius:10px;background:#fff;padding:9px 11px;font:400 .86rem/1.45 Arial,sans-serif;color:#243e45}
+.cq-builder-wide{grid-column:1/-1}.cq-builder-grid .cq-builder-check{display:flex;align-items:center;gap:9px}.cq-builder-grid input[type=checkbox],.cq-edit-grid input[type=checkbox]{width:auto;min-height:0}
+.cq-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:13px 0;min-width:300px;max-width:420px}
+.cq-edit-grid textarea,.cq-edit-grid input[name=title],.cq-edit-grid input[name=options],.cq-edit-grid input[name=question]{grid-column:1/-1}
+.cq-edit-mission summary{cursor:pointer;color:#6f1d2a;font-weight:700;padding-top:7px}
+.cq-admin-fold>summary{font:700 18px/1.4 Georgia,serif;color:#173541;cursor:pointer;min-height:28px}.cq-admin-fold-body{padding-top:18px}
+.cq-admin-search{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0}.cq-admin-search label{display:grid;gap:5px;flex:0 1 470px;font-size:12px;font-weight:700;color:#52676f}.cq-admin-search input{width:100%;border:1px solid #d8c9ae;border-radius:12px;padding:11px 13px;background:white;min-height:44px;font:400 14px Arial,sans-serif}.cq-admin-search>span{font-size:12px;color:#627269;white-space:nowrap}
+@media(max-width:650px){.cq-builder-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cq-game-card .cq-game-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cq-admin-search{align-items:stretch;flex-direction:column;gap:6px}.cq-admin-search label{flex:auto}.cq-game-section-head{flex-wrap:wrap}}
+
+.cq-game-shell button:disabled{opacity:.55;cursor:default}

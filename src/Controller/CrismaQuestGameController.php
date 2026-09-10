@@ -43,7 +43,7 @@ final class CrismaQuestGameController
 
         View::render('studenti/crismaquestGame', $data + [
             'title'=>'Missões',
-            'pageStyles'=>['/css/crismaquest-game.css'],
+            'pageStyles'=>['/css/crismaquest-game.css?v=20260910d'],
             'pageScripts'=>[],
         ], 'mainStudLayout');
     }
@@ -94,8 +94,8 @@ final class CrismaQuestGameController
 
         View::render('docenti/crismaquestGame', $data + [
             'title'=>'Jogo CrismaQuest',
-            'pageStyles'=>['/css/crismaquest-game.css','/css/crismaquest-teacher.css'],
-            'pageScripts'=>[],
+            'pageStyles'=>['/css/crismaquest-game.css?v=20260910d','/css/crismaquest-teacher.css'],
+            'pageScripts'=>['/js/crismaquest-game-admin.js?v=20260910d'],
             'useMathJax'=>false,
         ], 'mainDocLayout');
     }
@@ -104,7 +104,7 @@ final class CrismaQuestGameController
     {
         View::render('studenti/crismaquestGame', (new CrismaQuestGameService())->getTeacherPreviewData() + [
             'title'=>'Prévia das missões',
-            'pageStyles'=>['/css/crismaquest-app.css','/css/crismaquest-game.css'],
+            'pageStyles'=>['/css/crismaquest-app.css','/css/crismaquest-game.css?v=20260910d'],
             'useMathJax'=>false,
         ], 'mainDocLayout');
     }
