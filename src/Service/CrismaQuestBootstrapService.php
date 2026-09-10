@@ -9,7 +9,7 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v3';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v4';
 
     public static function ensureInstalled(): void
     {
@@ -19,6 +19,7 @@ class CrismaQuestBootstrapService
         // reaproveitamos somente esse registro exato para preservar a associação
         // do administrador sem manter conteúdo de teste visível.
         self::sanitizeLegacySeed($pdo);
+        self::curateSaintCharacters($pdo);
 
         if (self::isCoreReady($pdo) && self::isSocialReady($pdo)) return;
 
@@ -80,6 +81,74 @@ class CrismaQuestBootstrapService
         } catch (Throwable) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             // Saneamento visual nunca deve derrubar a aplicação.
+        }
+    }
+
+    /**
+     * Converte o elenco legado de personagens em um catálogo fixo de santos.
+     * Preserva os IDs existentes para não invalidar escolhas já feitas por crismandos.
+     */
+    private static function curateSaintCharacters(PDO $pdo): void
+    {
+        $saints = [
+            ['São Carlo Acutis','Jovem testemunha de amor à Eucaristia e de evangelização no mundo digital.','https://commons.wikimedia.org/wiki/Special:FilePath/St._Carlo_Acutis.jpg'],
+            ["Santa Joana d'Arc",'Padroeira da turma e testemunha de coragem, fidelidade e disponibilidade ao chamado de Deus.','https://commons.wikimedia.org/wiki/Special:FilePath/John_Everett_Millais_-_Joan_of_Arc.jpg'],
+            ['Santa Teresinha do Menino Jesus','Recorda que a santidade também passa pelas pequenas coisas feitas com grande amor.','https://commons.wikimedia.org/wiki/Special:FilePath/Teresa-de-Lisieux.jpg'],
+            ['São Francisco de Assis','Inspira simplicidade, fraternidade, cuidado com a criação e alegria no seguimento de Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Francis_of_Assisi_-_Cimabue.jpg'],
+            ['São Pedro','Discípulo chamado por Jesus a amadurecer na fé e servir à Igreja com coragem.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Peter_A26043.jpg'],
+            ['Santa Faustina Kowalska','Testemunha da misericórdia de Deus e do chamado a confiar em Jesus.','https://commons.wikimedia.org/wiki/Special:FilePath/Faustyna_Kowalska.png'],
+            ['São João Paulo II','Convidou os jovens a não terem medo de seguir Cristo e assumir sua missão no mundo.','https://commons.wikimedia.org/wiki/Special:FilePath/JohannesPaul2-portrait.jpg'],
+            ['Santa Gianna Beretta Molla','Testemunha de vocação, serviço, responsabilidade e amor concreto ao próximo.','https://commons.wikimedia.org/wiki/Special:FilePath/Gianna_Beretta_Molla_(cropped).jpg'],
+            ['Santo Agostinho','Sua busca pela verdade recorda que fé, razão e conversão caminham juntas.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Augustine_by_Philippe_de_Champaigne.jpg'],
+            ['Santa Mônica','Exemplo de perseverança na oração, esperança e cuidado com a família.','https://commons.wikimedia.org/wiki/Special:FilePath/Sainte_Monique.jpg'],
+            ['São José','Modelo de fidelidade, trabalho, silêncio e disponibilidade ao projeto de Deus.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Joseph_with_the_Infant_Jesus_by_Guido_Reni,_c_1635.jpg'],
+            ['São Vicente de Paulo','Mostra como a fé se torna caridade concreta e serviço aos mais vulneráveis.','https://commons.wikimedia.org/wiki/Special:FilePath/Anonymous_-_Portrait_de_saint_Vincent_de_Paul_(1581-1660)._-_P863_-_Musée_Carnavalet.jpg'],
+            ['São Sebastião','Recorda a coragem de permanecer fiel a Cristo mesmo diante das dificuldades.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Sebastian_painting.jpg'],
+            ['São Paulo','Apóstolo das nações: conversão, anúncio do Evangelho e perseverança na missão.','https://commons.wikimedia.org/wiki/Special:FilePath/Almeida_J%C3%BAnior_-_Ap%C3%B3stolo_S%C3%A3o_Paulo%2C_1869.jpg'],
+            ['Santa Clara','Testemunha de pobreza evangélica, oração e confiança em Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Santa_Chiara_d%27Assisi_di_Giovan_Battista_Moroni.jpg'],
+            ['Santa Catarina de Sena','Amor à Igreja, busca da verdade e coragem para servir.','https://commons.wikimedia.org/wiki/Special:FilePath/Catherine_of_Siena.jpg'],
+            ['São João Bosco','Amigo da juventude e educador que uniu fé, alegria e acompanhamento.','https://commons.wikimedia.org/wiki/Special:FilePath/Portrait_de_Don_Bosco.jpg'],
+            ['Santa Teresa de Calcutá','Mostra o amor cristão em gestos concretos de cuidado e serviço.','https://commons.wikimedia.org/wiki/Special:FilePath/Mother_Teresa.jpg'],
+            ['Santo Antônio','Testemunha da Palavra, proximidade com os pobres e anúncio de Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Anthony_of_Padua_Sano_di_Pietro.webp'],
+            ['São Domingos Sávio','Jovem santo que viveu amizade com Cristo, alegria e responsabilidade no cotidiano.','https://commons.wikimedia.org/wiki/Special:FilePath/Life_of_Dominic_Savio_(page_6_crop).jpg'],
+            ['Beato Pier Giorgio Frassati','Jovem de oração, amizade, serviço aos pobres e vida vivida sempre para o alto.','https://commons.wikimedia.org/wiki/Special:FilePath/PIER_GIORGIO_FRASSATI1925.jpg'],
+            ['São João Evangelista','Apóstolo e evangelista, testemunha do amor de Cristo e da força da Palavra.','https://commons.wikimedia.org/wiki/Special:FilePath/Fran%C3%A7ois_Andr%C3%A9_Vincent_-_Saint_John_the_Evangelist_-_80.6_-_Detroit_Institute_of_Arts.jpg'],
+            ['Santo André','Apóstolo que respondeu ao chamado de Jesus e levou outros ao encontro com Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_andrew.jpg'],
+        ];
+
+        try {
+            $classes = $pdo->query('SELECT id_classe FROM ct_classi WHERE eliminata = 0 ORDER BY id_classe')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            foreach ($classes as $classIdRaw) {
+                $classId = (int)$classIdRaw;
+                $idsStmt = $pdo->prepare('SELECT id_personaggio FROM ct_personaggi WHERE fk_classe = :id_classe ORDER BY id_personaggio');
+                $idsStmt->execute(['id_classe'=>$classId]);
+                $ids = array_map('intval', $idsStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+
+                while (count($ids) < count($saints)) {
+                    $pdo->prepare(
+                        "INSERT INTO ct_personaggi
+                         (uuid,nome_personaggio,immagine,vita_iniziale,descrizione,color,bordercolor,mana_iniziale,fk_classe,img_senza_sfondo,originale)
+                         VALUES (UUID(),'CrismaQuest Avatar','',5,'Avatar da Jornada','#0d3a4a','#c8a55c',5,:id_classe,'',0)"
+                    )->execute(['id_classe'=>$classId]);
+                    $ids[] = (int)$pdo->lastInsertId();
+                }
+
+                $update = $pdo->prepare(
+                    'UPDATE ct_personaggi
+                     SET nome_personaggio=:nome, descrizione=:descricao, immagine=:imagem,
+                         img_senza_sfondo=:imagem, color=:cor, bordercolor=:borda,
+                         vita_iniziale=5, mana_iniziale=5
+                     WHERE id_personaggio=:id AND fk_classe=:id_classe'
+                );
+                foreach ($saints as $i => [$name,$description,$image]) {
+                    $update->execute([
+                        'nome'=>$name,'descricao'=>$description,'imagem'=>$image,
+                        'cor'=>'#0d3a4a','borda'=>'#c8a55c','id'=>$ids[$i],'id_classe'=>$classId,
+                    ]);
+                }
+            }
+        } catch (Throwable) {
+            // Curadoria de avatar não deve impedir o restante do app de abrir.
         }
     }
 
