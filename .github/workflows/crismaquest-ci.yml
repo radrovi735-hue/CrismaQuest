@@ -1,0 +1,69 @@
+name: CrismaQuest CI
+
+on:
+  push:
+    branches:
+      - crismaquest-mvp
+      - 'feature/**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  php-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, gd, intl
+          tools: composer:v2
+
+      - name: Validate Composer
+        run: composer validate --no-check-publish
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax check
+        run: |
+          find src public routes config -type f -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: Check sensitive files are not tracked
+        run: |
+          test ! -f .env
+          if git ls-files | grep -E '(^|/)(\.env|.*\.log)$'; then
+            echo 'Sensitive/runtime files must not be tracked.'
+            exit 1
+          fi
+
+  build-deploy-package:
+    runs-on: ubuntu-latest
+    needs: php-checks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, gd, intl
+          tools: composer:v2
+      - run: composer install --no-dev --classmap-authoritative --no-interaction --prefer-dist --no-progress
+      - name: Prepare package
+        run: |
+          mkdir -p build
+          rsync -a ./ build/CrismaQuest/ \
+            --exclude build \
+            --exclude .git \
+            --exclude .github \
+            --exclude .env
+          cd build && zip -qr CrismaQuest-deploy.zip CrismaQuest
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrismaQuest-deploy
+          path: build/CrismaQuest-deploy.zip
+          retention-days: 7
