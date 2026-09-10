@@ -106,21 +106,26 @@ jobs:
 
       - name: Prepare deploy package
         run: |
+          rm -rf build
           mkdir -p build
-          rsync -a ./ build/CrismaQuest/ \
-            --exclude build \
-            --exclude .git \
-            --exclude .github \
-            --exclude .env
-          printf 'CrismaQuest\nCommit: %s\nBuilt: %s UTC\nInstitution: Paróquia Nossa Senhora dos Remédios · Arquidiocese de Fortaleza\n' "$GITHUB_SHA" "$(date -u '+%Y-%m-%d %H:%M:%S')" > build/CrismaQuest/BUILD-INFO.txt
-          cd build
-          zip -qr CrismaQuest-deploy.zip CrismaQuest
-          sha256sum CrismaQuest-deploy.zip > CrismaQuest-deploy.sha256
+          PACKAGE_ROOT="$(mktemp -d)"
+          mkdir -p "$PACKAGE_ROOT/CrismaQuest"
+          rsync -a \
+            --exclude='/.git/' \
+            --exclude='/.github/' \
+            --exclude='/.env' \
+            --exclude='/build/' \
+            ./ "$PACKAGE_ROOT/CrismaQuest/"
+          printf 'CrismaQuest\nCommit: %s\nBuilt: %s UTC\nInstitution: Paróquia Nossa Senhora dos Remédios · Arquidiocese de Fortaleza\n' "$GITHUB_SHA" "$(date -u '+%Y-%m-%d %H:%M:%S')" > "$PACKAGE_ROOT/CrismaQuest/BUILD-INFO.txt"
+          (cd "$PACKAGE_ROOT" && zip -qr "$GITHUB_WORKSPACE/build/CrismaQuest-deploy.zip" CrismaQuest)
+          sha256sum build/CrismaQuest-deploy.zip > build/CrismaQuest-deploy.sha256
+          mv "$PACKAGE_ROOT/CrismaQuest" build/CrismaQuest
 
       - name: Validate deploy package
         run: |
           unzip -t build/CrismaQuest-deploy.zip
           test -f build/CrismaQuest/public/index.php
+          test -f build/CrismaQuest/public/crismaquest-install.php
           test -f build/CrismaQuest/public/css/crismaquest-app.css
           test -f build/CrismaQuest/public/assets/crismaquest/journey-map.svg
           test -f build/CrismaQuest/sql/crismaquest/001_core.sql
