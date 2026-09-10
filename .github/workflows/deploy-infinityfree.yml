@@ -16,9 +16,6 @@ concurrency:
   group: crismaquest-infinityfree-production
   cancel-in-progress: true
 
-env:
-  RECOVERY_BASE: 341cb7efb06e98ccc6d0feaa17c86a76ee5a99cf
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -27,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Decide deployment mode
         id: mode
@@ -35,26 +32,69 @@ jobs:
         run: |
           set -euo pipefail
           full=false
-          recovery=false
+          repair=false
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.full_deploy }}" == "true" ]]; then full=true; fi
           if git log -1 --pretty=%B | grep -q '\[full-deploy\]'; then full=true; fi
-          if git log -1 --pretty=%B | grep -q '\[recover-prod\]'; then recovery=true; fi
+          if git log -1 --pretty=%B | grep -q '\[repair-visuals\]'; then repair=true; fi
           echo "full=$full" >> "$GITHUB_OUTPUT"
-          echo "recovery=$recovery" >> "$GITHUB_OUTPUT"
+          echo "repair=$repair" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare safe incremental package
-        if: steps.mode.outputs.full != 'true'
+      - name: Prepare targeted visual repair
+        if: steps.mode.outputs.full != 'true' && steps.mode.outputs.repair == 'true'
         shell: bash
         run: |
           set -euo pipefail
           rm -rf deploy-fast
           mkdir -p deploy-fast
-          if [[ "${{ steps.mode.outputs.recovery }}" == "true" ]]; then
-            RANGE="${RECOVERY_BASE}..HEAD"
-          else
-            RANGE="HEAD^..HEAD"
-          fi
-          git diff --name-only --diff-filter=AM "$RANGE" | while IFS= read -r file; do
+
+          copy_file() {
+            local file="$1"
+            [[ -f "$file" ]] || return 0
+            mkdir -p "deploy-fast/$(dirname "$file")"
+            cp "$file" "deploy-fast/$file"
+          }
+
+          for file in \
+            .htaccess \
+            public/.htaccess \
+            public/index.php \
+            routes/web.php \
+            routes/crismaquest.php \
+            src/Service/CrismaQuestBootstrapService.php \
+            src/Service/StudentDashboardService.php \
+            public/views/layouts/mainStudLayout.php \
+            public/views/studenti/dashboard.php \
+            public/views/studenti/classDashboard.php \
+            public/views/studenti/journey.php \
+            public/views/studenti/crismaquestSocial.php \
+            public/views/studenti/badge/index.php \
+            public/js/crismaquest-saint-avatars.js \
+            public/assets/fontawesome-7.2/css/all.min.css \
+            public/assets/bootstrap-5.3.8/css/bootstrap.min.css \
+            public/assets/bootstrap-5.3.8/js/bootstrap.bundle.min.js \
+            public/assets/jquery/jquery.min.js
+          do
+            copy_file "$file"
+          done
+
+          while IFS= read -r -d '' file; do copy_file "$file"; done < <(find public/css -maxdepth 1 -type f -name 'crismaquest-*.css' -print0)
+
+          mkdir -p deploy-fast/public/assets
+          cp -a public/assets/crismaquest deploy-fast/public/assets/
+          mkdir -p deploy-fast/public/assets/fontawesome-7.2
+          cp -a public/assets/fontawesome-7.2/webfonts deploy-fast/public/assets/fontawesome-7.2/
+
+          echo "Targeted repair files: $(find deploy-fast -type f | wc -l)"
+          find deploy-fast -type f -print | sort
+
+      - name: Prepare normal incremental package
+        if: steps.mode.outputs.full != 'true' && steps.mode.outputs.repair != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-fast
+          mkdir -p deploy-fast
+          git diff --name-only --diff-filter=AM HEAD^ HEAD | while IFS= read -r file; do
             case "$file" in
               .htaccess|public/*|src/*|routes/*|config/*|sql/*|translations/*)
                 if [[ -f "$file" ]]; then
@@ -64,17 +104,9 @@ jobs:
                 ;;
             esac
           done
-          if [[ "${{ steps.mode.outputs.recovery }}" == "true" ]]; then
-            for file in .htaccess public/.htaccess public/index.php public/views/studenti/dashboard.php; do
-              if [[ -f "$file" ]]; then
-                mkdir -p "deploy-fast/$(dirname "$file")"
-                cp "$file" "deploy-fast/$file"
-              fi
-            done
-          fi
-          echo "Files to upload: $(find deploy-fast -type f | wc -l)"
+          echo "Incremental files: $(find deploy-fast -type f | wc -l)"
 
-      - name: Safe incremental upload
+      - name: Safe upload-only deploy
         if: steps.mode.outputs.full != 'true'
         shell: bash
         env:
@@ -82,15 +114,20 @@ jobs:
           FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
         run: |
           set -euo pipefail
+          count=0
           while IFS= read -r -d '' file; do
             rel="${file#deploy-fast/}"
-            curl --silent --show-error --fail --ftp-create-dirs \
+            encoded=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$rel")
+            echo "Uploading $rel"
+            curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs \
               --user "${FTP_USER}:${FTP_PASS}" \
               --upload-file "$file" \
-              "ftp://ftpupload.net/htdocs/$rel"
+              "ftp://ftpupload.net/htdocs/$encoded"
+            count=$((count+1))
           done < <(find deploy-fast -type f -print0)
+          echo "Uploaded $count files without deleting remote files."
 
-      - name: Setup PHP for full recovery
+      - name: Setup PHP for full deploy
         if: steps.mode.outputs.full == 'true'
         uses: shivammathur/setup-php@v2
         with:
@@ -121,7 +158,6 @@ jobs:
           find deploy/public/assets/bootstrap/js -type f ! -name 'bootstrap.bundle.min.js' -delete 2>/dev/null || true
           find deploy -type f \( -name '*.map' -o -name '.DS_Store' -o -name '*.md' -o -name 'cq-health-91f3.php' -o -name 'cq-route-7b3f.php' \) -delete
           echo "Full runtime files: $(find deploy -type f | wc -l)"
-          echo "Full runtime size: $(du -sh deploy | cut -f1)"
 
       - name: Safe full runtime upload
         if: steps.mode.outputs.full == 'true'
@@ -131,13 +167,14 @@ jobs:
           FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          export FTP_USER FTP_PASS
-          find deploy -type f -print0 | xargs -0 -n1 -P6 bash -c '
-            file="$0"
+          count=0
+          while IFS= read -r -d '' file; do
             rel="${file#deploy/}"
-            curl --silent --show-error --fail --retry 2 --retry-delay 1 --ftp-create-dirs \
+            encoded=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$rel")
+            curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs \
               --user "${FTP_USER}:${FTP_PASS}" \
               --upload-file "$file" \
-              "ftp://ftpupload.net/htdocs/$rel"
-          '
-          echo "Safe full runtime recovery completed without deleting remote files."
+              "ftp://ftpupload.net/htdocs/$encoded"
+            count=$((count+1))
+          done < <(find deploy -type f -print0)
+          echo "Uploaded $count runtime files without deleting remote files."

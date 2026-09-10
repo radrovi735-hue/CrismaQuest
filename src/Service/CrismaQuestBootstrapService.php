@@ -9,15 +9,12 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v4';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v5';
 
     public static function ensureInstalled(): void
     {
         $pdo = Database::getConnection();
 
-        // A base ChronoQuest vem com uma turma de demonstração. Em produção,
-        // reaproveitamos somente esse registro exato para preservar a associação
-        // do administrador sem manter conteúdo de teste visível.
         self::sanitizeLegacySeed($pdo);
         self::curateSaintCharacters($pdo);
 
@@ -46,7 +43,6 @@ class CrismaQuestBootstrapService
     private static function sanitizeLegacySeed(PDO $pdo): void
     {
         try {
-            // Só toca no registro de demonstração original. Turmas criadas pelo usuário nunca são alteradas.
             $stmt = $pdo->prepare(
                 "SELECT c.id_classe, c.fk_anno_scolastico
                  FROM ct_classi c
@@ -80,19 +76,25 @@ class CrismaQuestBootstrapService
             $pdo->commit();
         } catch (Throwable) {
             if ($pdo->inTransaction()) $pdo->rollBack();
-            // Saneamento visual nunca deve derrubar a aplicação.
         }
     }
 
     /**
-     * Converte o elenco legado de personagens em um catálogo fixo de santos.
-     * Preserva os IDs existentes para não invalidar escolhas já feitas por crismandos.
+     * Mantém um vínculo determinístico entre o personagem legado e o santo.
+     *
+     * Importante: a UI original do CrismaQuest usava id_personaggio % 12 para
+     * escolher o santo. Portanto os registros originais (originale=1) precisam
+     * conservar exatamente essa regra; mudar a ordem da lista não pode trocar
+     * o avatar de um crismando que já fez sua escolha.
+     *
+     * Novos santos usam apenas linhas criadas pelo próprio CrismaQuest
+     * (originale=0). Linhas personalizadas que não pertencem ao catálogo não
+     * são tocadas.
      */
     private static function curateSaintCharacters(PDO $pdo): void
     {
-        $saints = [
+        $legacy = [
             ['São Carlo Acutis','Jovem testemunha de amor à Eucaristia e de evangelização no mundo digital.','https://commons.wikimedia.org/wiki/Special:FilePath/St._Carlo_Acutis.jpg'],
-            ["Santa Joana d'Arc",'Padroeira da turma e testemunha de coragem, fidelidade e disponibilidade ao chamado de Deus.','https://commons.wikimedia.org/wiki/Special:FilePath/John_Everett_Millais_-_Joan_of_Arc.jpg'],
             ['Santa Teresinha do Menino Jesus','Recorda que a santidade também passa pelas pequenas coisas feitas com grande amor.','https://commons.wikimedia.org/wiki/Special:FilePath/Teresa-de-Lisieux.jpg'],
             ['São Francisco de Assis','Inspira simplicidade, fraternidade, cuidado com a criação e alegria no seguimento de Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Francis_of_Assisi_-_Cimabue.jpg'],
             ['São Pedro','Discípulo chamado por Jesus a amadurecer na fé e servir à Igreja com coragem.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Peter_A26043.jpg'],
@@ -104,6 +106,10 @@ class CrismaQuestBootstrapService
             ['São José','Modelo de fidelidade, trabalho, silêncio e disponibilidade ao projeto de Deus.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Joseph_with_the_Infant_Jesus_by_Guido_Reni,_c_1635.jpg'],
             ['São Vicente de Paulo','Mostra como a fé se torna caridade concreta e serviço aos mais vulneráveis.','https://commons.wikimedia.org/wiki/Special:FilePath/Anonymous_-_Portrait_de_saint_Vincent_de_Paul_(1581-1660)._-_P863_-_Musée_Carnavalet.jpg'],
             ['São Sebastião','Recorda a coragem de permanecer fiel a Cristo mesmo diante das dificuldades.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Sebastian_painting.jpg'],
+        ];
+
+        $extras = [
+            ["Santa Joana d'Arc",'Padroeira da turma e testemunha de coragem, fidelidade e disponibilidade ao chamado de Deus.','https://commons.wikimedia.org/wiki/Special:FilePath/John_Everett_Millais_-_Joan_of_Arc.jpg'],
             ['São Paulo','Apóstolo das nações: conversão, anúncio do Evangelho e perseverança na missão.','https://commons.wikimedia.org/wiki/Special:FilePath/Almeida_J%C3%BAnior_-_Ap%C3%B3stolo_S%C3%A3o_Paulo%2C_1869.jpg'],
             ['Santa Clara','Testemunha de pobreza evangélica, oração e confiança em Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Santa_Chiara_d%27Assisi_di_Giovan_Battista_Moroni.jpg'],
             ['Santa Catarina de Sena','Amor à Igreja, busca da verdade e coragem para servir.','https://commons.wikimedia.org/wiki/Special:FilePath/Catherine_of_Siena.jpg'],
@@ -117,38 +123,70 @@ class CrismaQuestBootstrapService
         ];
 
         try {
+            $knownNames = [];
+            foreach (array_merge($legacy, $extras) as $saint) $knownNames[] = $saint[0];
+
             $classes = $pdo->query('SELECT id_classe FROM ct_classi WHERE eliminata = 0 ORDER BY id_classe')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $update = $pdo->prepare(
+                'UPDATE ct_personaggi
+                 SET nome_personaggio=:nome,
+                     descrizione=:descricao,
+                     immagine=:imagem,
+                     img_senza_sfondo=:imagem,
+                     color=:cor,
+                     bordercolor=:borda
+                 WHERE id_personaggio=:id AND fk_classe=:id_classe'
+            );
+
             foreach ($classes as $classIdRaw) {
                 $classId = (int)$classIdRaw;
-                $idsStmt = $pdo->prepare('SELECT id_personaggio FROM ct_personaggi WHERE fk_classe = :id_classe ORDER BY id_personaggio');
-                $idsStmt->execute(['id_classe'=>$classId]);
-                $ids = array_map('intval', $idsStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+                $stmt = $pdo->prepare(
+                    'SELECT id_personaggio, nome_personaggio, originale
+                     FROM ct_personaggi
+                     WHERE fk_classe=:id_classe
+                     ORDER BY id_personaggio'
+                );
+                $stmt->execute(['id_classe'=>$classId]);
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $extraIds = [];
 
-                while (count($ids) < count($saints)) {
+                foreach ($rows as $row) {
+                    $id = (int)$row['id_personaggio'];
+                    if ((int)$row['originale'] === 1) {
+                        $saint = $legacy[abs($id) % count($legacy)];
+                        $update->execute([
+                            'nome'=>$saint[0], 'descricao'=>$saint[1], 'imagem'=>$saint[2],
+                            'cor'=>'#0d3a4a', 'borda'=>'#c8a55c', 'id'=>$id, 'id_classe'=>$classId,
+                        ]);
+                        continue;
+                    }
+
+                    $name = (string)($row['nome_personaggio'] ?? '');
+                    if ($name === 'CrismaQuest Avatar' || in_array($name, $knownNames, true)) {
+                        $extraIds[] = $id;
+                    }
+                }
+
+                while (count($extraIds) < count($extras)) {
                     $pdo->prepare(
                         "INSERT INTO ct_personaggi
                          (uuid,nome_personaggio,immagine,vita_iniziale,descrizione,color,bordercolor,mana_iniziale,fk_classe,img_senza_sfondo,originale)
                          VALUES (UUID(),'CrismaQuest Avatar','',5,'Avatar da Jornada','#0d3a4a','#c8a55c',5,:id_classe,'',0)"
                     )->execute(['id_classe'=>$classId]);
-                    $ids[] = (int)$pdo->lastInsertId();
+                    $extraIds[] = (int)$pdo->lastInsertId();
                 }
 
-                $update = $pdo->prepare(
-                    'UPDATE ct_personaggi
-                     SET nome_personaggio=:nome, descrizione=:descricao, immagine=:imagem,
-                         img_senza_sfondo=:imagem, color=:cor, bordercolor=:borda,
-                         vita_iniziale=5, mana_iniziale=5
-                     WHERE id_personaggio=:id AND fk_classe=:id_classe'
-                );
-                foreach ($saints as $i => [$name,$description,$image]) {
+                sort($extraIds, SORT_NUMERIC);
+                foreach ($extras as $i => $saint) {
+                    if (!isset($extraIds[$i])) break;
                     $update->execute([
-                        'nome'=>$name,'descricao'=>$description,'imagem'=>$image,
-                        'cor'=>'#0d3a4a','borda'=>'#c8a55c','id'=>$ids[$i],'id_classe'=>$classId,
+                        'nome'=>$saint[0], 'descricao'=>$saint[1], 'imagem'=>$saint[2],
+                        'cor'=>'#0d3a4a', 'borda'=>'#c8a55c', 'id'=>$extraIds[$i], 'id_classe'=>$classId,
                     ]);
                 }
             }
         } catch (Throwable) {
-            // Curadoria de avatar não deve impedir o restante do app de abrir.
+            // Curadoria visual nunca deve impedir o app de abrir.
         }
     }
 
