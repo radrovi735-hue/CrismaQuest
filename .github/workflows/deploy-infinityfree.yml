@@ -8,9 +8,14 @@ on:
     paths:
       - '.github/workflows/deploy-infinityfree.yml'
 
+concurrency:
+  group: crismaquest-infinityfree-production
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -25,7 +30,20 @@ jobs:
       - name: Install production dependencies
         run: composer install --no-dev --classmap-authoritative --no-interaction --prefer-dist --no-progress
 
-      - name: Deploy to InfinityFree
+      - name: Prepare slim InfinityFree package
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy
+          mkdir -p deploy
+          cp -a .htaccess config public routes sql src translations vendor deploy/
+          if [ -d var ]; then cp -a var deploy/; else mkdir -p deploy/var; fi
+          rm -rf deploy/public/assets/MathJax-master
+          find deploy -type f \( -name '*.map' -o -name '.DS_Store' \) -delete
+          echo "Files to deploy: $(find deploy -type f | wc -l)"
+          echo "Package size: $(du -sh deploy | cut -f1)"
+
+      - name: Deploy slim package to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ftpupload.net
@@ -34,14 +52,10 @@ jobs:
           protocol: ftp
           port: 21
           server-dir: htdocs/
-          local-dir: ./
-          timeout: 120000
-          log-level: standard
+          local-dir: ./deploy/
+          state-name: .crismaquest-deploy-state.json
+          timeout: 300000
+          log-level: minimal
           exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
             **/.env
-            **/build/**
-            **/.idea/**
-            **/.vscode/**
+            **/.git*
