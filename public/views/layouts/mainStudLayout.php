@@ -1,10 +1,14 @@
 <?php
 
 use App\Service\TranslationService;
+use App\Service\CrismaQuestSocialService;
 
 $translator = new TranslationService();
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $currentView = (string) ($_GET['view'] ?? 'home');
+$socialService = new CrismaQuestSocialService();
+$unreadSocial = $socialService->getUnreadCountSafe();
+$cosmeticClasses = $socialService->getEquippedCosmeticClassesSafe();
 $navItems = [
     ['/studenti/classe/dashboard', 'home', 'fa-house', 'Início'],
     ['/studenti/quest', 'missions', 'fa-compass', 'Missões'],
@@ -26,18 +30,25 @@ $navItems = [
     <link href="/assets/fontawesome-7.2/css/all.min.css" rel="stylesheet">
     <link href="/css/crismaquest-theme.css" rel="stylesheet">
     <link href="/css/crismaquest-app.css" rel="stylesheet">
+    <link href="/css/crismaquest-social.css" rel="stylesheet">
     <?php if (!empty($pageStyles ?? [])): ?>
         <?php foreach ($pageStyles as $style): ?>
             <link href="<?= htmlspecialchars($style) ?>" rel="stylesheet">
         <?php endforeach; ?>
     <?php endif; ?>
 </head>
-<body id="page-top">
+<body id="page-top" class="<?= htmlspecialchars(implode(' ', $cosmeticClasses)) ?>">
 <header class="cq-app-topbar">
     <div class="container-fluid h-100 d-flex align-items-center justify-content-between px-3 px-md-4">
         <a href="/studenti/classe/dashboard" class="cq-brand">Crisma<span class="quest">Quest</span></a>
         <div class="d-none d-sm-block text-center cq-parish">Paróquia Nossa Senhora dos Remédios · Arquidiocese de Fortaleza</div>
-        <a class="cq-top-profile" href="/studenti/profilo" aria-label="Abrir perfil"><i class="fa-solid fa-user"></i></a>
+        <div class="d-flex align-items-center">
+            <a class="cq-top-mail" href="/studenti/correio" aria-label="Abrir Correio da Jornada">
+                <i class="fa-regular fa-envelope"></i>
+                <?php if ($unreadSocial > 0): ?><span class="cq-mail-count"><?= min(99, $unreadSocial) ?></span><?php endif; ?>
+            </a>
+            <a class="cq-top-profile" href="/studenti/profilo" aria-label="Abrir perfil"><i class="fa-solid fa-user"></i></a>
+        </div>
     </div>
 </header>
 
