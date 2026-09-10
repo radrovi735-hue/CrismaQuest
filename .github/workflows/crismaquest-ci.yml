@@ -118,7 +118,7 @@ jobs:
             ./ "$PACKAGE_ROOT/CrismaQuest/"
           printf 'CrismaQuest\nCommit: %s\nBuilt: %s UTC\nInstitution: Paróquia Nossa Senhora dos Remédios · Arquidiocese de Fortaleza\n' "$GITHUB_SHA" "$(date -u '+%Y-%m-%d %H:%M:%S')" > "$PACKAGE_ROOT/CrismaQuest/BUILD-INFO.txt"
           (cd "$PACKAGE_ROOT" && zip -qr "$GITHUB_WORKSPACE/build/CrismaQuest-deploy.zip" CrismaQuest)
-          sha256sum build/CrismaQuest-deploy.zip > build/CrismaQuest-deploy.sha256
+          (cd build && sha256sum CrismaQuest-deploy.zip > CrismaQuest-deploy.sha256)
           mv "$PACKAGE_ROOT/CrismaQuest" build/CrismaQuest
 
       - name: Validate deploy package
@@ -135,7 +135,7 @@ jobs:
           test ! -f build/CrismaQuest/.env
           test ! -d build/CrismaQuest/.git
           test ! -d build/CrismaQuest/.github
-          sha256sum -c build/CrismaQuest-deploy.sha256
+          (cd build && sha256sum -c CrismaQuest-deploy.sha256)
 
       - name: Upload approved package
         uses: actions/upload-artifact@v4
