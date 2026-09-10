@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Core\View;
+use App\Service\CrismaQuestAlbumService;
 use App\Service\CrismaQuestJourneyService;
 use App\Service\CrismaQuestStreakService;
 use App\Service\Flash;
@@ -54,6 +55,10 @@ class StudentDashboardController
         $data['crismaquestJourney'] = (new CrismaQuestJourneyService())->getSeasonData($studentId);
 
         $requestedView = (string) ($_GET['view'] ?? 'home');
+        if ($requestedView === 'album') {
+            $data['crismaquestAlbum'] = (new CrismaQuestAlbumService())->getAlbum();
+        }
+
         $view = match ($requestedView) {
             'journey' => 'studenti/journey',
             'album' => 'studenti/album',
