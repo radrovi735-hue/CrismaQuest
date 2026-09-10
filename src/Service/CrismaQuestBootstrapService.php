@@ -9,12 +9,12 @@ use Throwable;
 /** Instala e atualiza as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v3';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v2';
 
     public static function ensureInstalled(): void
     {
         $pdo = Database::getConnection();
-        if (self::isCoreReady($pdo) && self::isSocialReady($pdo) && self::isLumenAuditReady($pdo)) return;
+        if (self::isCoreReady($pdo) && self::isSocialReady($pdo)) return;
 
         $lock = $pdo->prepare('SELECT GET_LOCK(:lock_name, 10)');
         $lock->execute(['lock_name'=>self::LOCK_NAME]);
@@ -27,9 +27,8 @@ class CrismaQuestBootstrapService
                 self::importSqlFile($pdo, $root.'/sql/crismaquest/002_saints_seed.sql');
             }
             if (!self::isSocialReady($pdo)) self::importSqlFile($pdo, $root.'/sql/crismaquest/003_social_economy.sql');
-            if (!self::isLumenAuditReady($pdo)) self::importSqlFile($pdo, $root.'/sql/crismaquest/004_lumen_ledger_trigger.sql');
 
-            if (!self::isCoreReady($pdo) || !self::isSocialReady($pdo) || !self::isLumenAuditReady($pdo)) {
+            if (!self::isCoreReady($pdo) || !self::isSocialReady($pdo)) {
                 throw new RuntimeException('A atualização do banco do CrismaQuest não foi concluída.');
             }
         } finally {
@@ -53,14 +52,6 @@ class CrismaQuestBootstrapService
             $q=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('cq_lumen_ledger','cq_gift_catalog','cq_peer_notes','cq_gifts','cq_user_cosmetics','cq_trade_offers')");
             if ((int)$q->fetchColumn() !== 6) return false;
             return (int)$pdo->query('SELECT COUNT(*) FROM cq_gift_catalog WHERE active=1')->fetchColumn() >= 11;
-        } catch (Throwable) { return false; }
-    }
-
-    private static function isLumenAuditReady(PDO $pdo): bool
-    {
-        try {
-            $stmt=$pdo->prepare("SELECT COUNT(*) FROM information_schema.triggers WHERE trigger_schema=DATABASE() AND trigger_name='cq_lumen_positive_ledger'");
-            $stmt->execute(); return (int)$stmt->fetchColumn() === 1;
         } catch (Throwable) { return false; }
     }
 
