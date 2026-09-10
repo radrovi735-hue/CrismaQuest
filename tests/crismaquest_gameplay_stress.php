@@ -5,10 +5,10 @@ declare(strict_types=1);
 // O job de database-smoke não instala dependências Composer. O stress test
 // usa apenas classes App\\*, então registramos o autoload PSR-4 mínimo aqui.
 spl_autoload_register(static function (string $class): void {
-    $prefix = 'App\\\\';
+    $prefix = 'App\\';
     if (!str_starts_with($class, $prefix)) return;
     $relative = substr($class, strlen($prefix));
-    $path = dirname(__DIR__) . '/src/' . str_replace('\\\\', '/', $relative) . '.php';
+    $path = dirname(__DIR__) . '/src/' . str_replace('\\', '/', $relative) . '.php';
     if (is_file($path)) require $path;
 });
 
