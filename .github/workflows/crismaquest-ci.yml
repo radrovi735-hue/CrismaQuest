@@ -25,8 +25,7 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: PHP syntax check
-        run: |
-          find src public routes config -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: find src public routes config -type f -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Check sensitive files are not tracked
         run: |
           test ! -f .env
@@ -57,31 +56,25 @@ jobs:
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/001_core.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/002_saints_seed.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/003_social_economy.sql
-          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/004_lumen_ledger_trigger.sql
-      - name: Verify CrismaQuest tables, trigger and catalogues
+      - name: Verify CrismaQuest tables and catalogues
         run: |
           TABLES=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='crismaquest_ci' AND table_name IN ('cq_streaks','cq_streak_events','cq_saint_cards','cq_card_editions','cq_user_cards','cq_meetings','cq_attendance','cq_attendance_audit','cq_lumen_ledger','cq_gift_catalog','cq_peer_notes','cq_gifts','cq_user_cosmetics','cq_trade_offers');")
           SAINTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_saint_cards;")
           EDITIONS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_card_editions WHERE edition_type='normal';")
           GIFTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_gift_catalog WHERE active=1;")
-          TRIGGER_COUNT=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM information_schema.triggers WHERE trigger_schema='crismaquest_ci' AND trigger_name='cq_lumen_positive_ledger';")
           test "$TABLES" -eq 14
           test "$SAINTS" -eq 20
           test "$EDITIONS" -eq 20
           test "$GIFTS" -eq 11
-          test "$TRIGGER_COUNT" -eq 1
       - name: Verify migrations are idempotent
         run: |
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/001_core.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/002_saints_seed.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/003_social_economy.sql
-          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/004_lumen_ledger_trigger.sql
           SAINTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_saint_cards;")
           GIFTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_gift_catalog;")
-          TRIGGER_COUNT=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM information_schema.triggers WHERE trigger_schema='crismaquest_ci' AND trigger_name='cq_lumen_positive_ledger';")
           test "$SAINTS" -eq 20
           test "$GIFTS" -eq 11
-          test "$TRIGGER_COUNT" -eq 1
 
   build-deploy-package:
     runs-on: ubuntu-latest
@@ -115,11 +108,12 @@ jobs:
           test -f build/CrismaQuest/public/install.php
           test -f build/CrismaQuest/src/Service/CrismaQuestBootstrapService.php
           test -f build/CrismaQuest/src/Service/CrismaQuestSocialService.php
+          test -f build/CrismaQuest/src/Service/CrismaQuestLumenLedgerService.php
+          test -f build/CrismaQuest/src/Service/CrismaQuestHomeService.php
           test -f build/CrismaQuest/public/views/studenti/crismaquestSocial.php
           test -f build/CrismaQuest/public/views/docenti/crismaquestSocialAudit.php
           test -f build/CrismaQuest/routes/crismaquest.php
           test -f build/CrismaQuest/sql/crismaquest/003_social_economy.sql
-          test -f build/CrismaQuest/sql/crismaquest/004_lumen_ledger_trigger.sql
           test -f build/CrismaQuest/vendor/autoload.php
           test ! -d build/CrismaQuest/public/assets/MathJax-master
           test ! -f build/CrismaQuest/.env
