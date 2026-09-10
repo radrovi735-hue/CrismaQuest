@@ -18,18 +18,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Prepare priority bootstrap
+      - name: Prepare priority CrismaQuest files
         shell: bash
         run: |
           set -euo pipefail
           rm -rf priority
-          mkdir -p priority/public
+          mkdir -p priority/public/views/docenti/modals priority/src/Service priority/translations
           cp .htaccess priority/.htaccess
           cp public/.htaccess priority/public/.htaccess
           cp public/install.php priority/public/install.php
+          cp public/index.php priority/public/index.php
+          cp public/views/docenti/classi.php priority/public/views/docenti/classi.php
+          cp public/views/docenti/modals/teacherClassCreateModal.php priority/public/views/docenti/modals/teacherClassCreateModal.php
+          cp src/Service/CrismaQuestBootstrapService.php priority/src/Service/CrismaQuestBootstrapService.php
+          cp src/Service/TeacherClassService.php priority/src/Service/TeacherClassService.php
+          cp src/Service/TranslationService.php priority/src/Service/TranslationService.php
+          cp translations/pt.php priority/translations/pt.php
           echo "Priority files: $(find priority -type f | wc -l)"
 
-      - name: Publish installer first
+      - name: Publish priority fixes first
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ftpupload.net
@@ -61,25 +68,15 @@ jobs:
           mkdir -p deploy
           cp -a .htaccess config public routes sql src translations vendor deploy/
           if [ -d var ]; then cp -a var deploy/; else mkdir -p deploy/var; fi
-
-          # Remove development/source assets never requested by the browser.
-          rm -rf deploy/public/assets/MathJax-master
-          rm -rf deploy/public/readme
-          rm -rf deploy/public/assets/bootstrap/scss
-          rm -rf deploy/public/assets/fontawesome-7.2/js
-          rm -rf deploy/public/assets/fontawesome-7.2/metadata
-          rm -rf deploy/public/assets/fontawesome-7.2/scss
-          rm -rf deploy/public/assets/fontawesome-7.2/sprites
-          rm -rf deploy/public/assets/fontawesome-7.2/sprites-full
-          rm -rf deploy/public/assets/fontawesome-7.2/svgs
-          rm -rf deploy/public/assets/fontawesome-7.2/svgs-full
+          rm -rf deploy/public/assets/MathJax-master deploy/public/readme deploy/public/assets/bootstrap/scss
+          rm -rf deploy/public/assets/fontawesome-7.2/js deploy/public/assets/fontawesome-7.2/metadata deploy/public/assets/fontawesome-7.2/scss
+          rm -rf deploy/public/assets/fontawesome-7.2/sprites deploy/public/assets/fontawesome-7.2/sprites-full deploy/public/assets/fontawesome-7.2/svgs deploy/public/assets/fontawesome-7.2/svgs-full
           find deploy/public/assets/fontawesome-7.2/css -type f ! -name 'all.min.css' -delete 2>/dev/null || true
           find deploy/public/assets/bootstrap-5.3.8/css -type f ! -name 'bootstrap.min.css' -delete 2>/dev/null || true
           find deploy/public/assets/bootstrap-5.3.8/js -type f ! -name 'bootstrap.bundle.min.js' -delete 2>/dev/null || true
           find deploy/public/assets/bootstrap/css -type f ! -name 'bootstrap.min.css' -delete 2>/dev/null || true
           find deploy/public/assets/bootstrap/js -type f ! -name 'bootstrap.bundle.min.js' -delete 2>/dev/null || true
           find deploy -type f \( -name '*.map' -o -name '.DS_Store' -o -name '*.md' \) -delete
-
           echo "Files to deploy: $(find deploy -type f | wc -l)"
           echo "Package size: $(du -sh deploy | cut -f1)"
 
