@@ -29,12 +29,14 @@ jobs:
           cp public/install.php priority/public/install.php
           cp public/index.php priority/public/index.php
           cp public/views/layouts/mainDocLayout.php priority/public/views/layouts/mainDocLayout.php
+          cp public/views/layouts/mainStudLayout.php priority/public/views/layouts/mainStudLayout.php
           cp public/views/docenti/classi.php priority/public/views/docenti/classi.php
           cp public/views/docenti/studenti/index.php priority/public/views/docenti/studenti/index.php
           cp public/views/docenti/modals/teacherClassCreateModal.php priority/public/views/docenti/modals/teacherClassCreateModal.php
           cp public/views/docenti/modals/studentManagementModals.php priority/public/views/docenti/modals/studentManagementModals.php
           cp public/views/studenti/classDashboard.php priority/public/views/studenti/classDashboard.php
           cp public/js/docenti/studenti.js priority/public/js/docenti/studenti.js
+          cp public/js/crismaquest-saint-avatars.js priority/public/js/crismaquest-saint-avatars.js
           cp src/Service/CrismaQuestBootstrapService.php priority/src/Service/CrismaQuestBootstrapService.php
           cp src/Service/TeacherClassService.php priority/src/Service/TeacherClassService.php
           cp src/Service/TranslationService.php priority/src/Service/TranslationService.php
