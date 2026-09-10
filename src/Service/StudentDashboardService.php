@@ -600,22 +600,28 @@ class StudentDashboardService
         ?array $nextLevel
     ): array {
         $xpCurrent = (int) $student['xp'];
+        $currentGameLevel = max(1, min(8, (int)$student['livello']));
         $xpPercent = 100;
-        $xpLabel = 'MAX';
+        $xpLabel = $xpCurrent . ' XP';
 
-        if ($nextLevel !== null && (int) $nextLevel['xp'] > 0) {
-            $requiredXp = (int) $nextLevel['xp'];
-            $cumulativeXp = (int) $nextLevel['xp_cumulata'];
-            if ((int) $student['livello'] > 1) {
-                $xpMissing = $cumulativeXp - $xpCurrent;
-                $currentLevelXp = $requiredXp - $xpMissing;
-            } else {
-                $currentLevelXp = $xpCurrent;
+        try {
+            $pdo = Database::getConnection();
+            $currentStmt = $pdo->prepare('SELECT xp_min FROM cq_game_levels WHERE level_no=:l LIMIT 1');
+            $currentStmt->execute(['l'=>$currentGameLevel]);
+            $currentMin = (int)($currentStmt->fetchColumn() ?: 0);
+
+            $nextStmt = $pdo->prepare('SELECT xp_min FROM cq_game_levels WHERE level_no=:l LIMIT 1');
+            $nextStmt->execute(['l'=>$currentGameLevel + 1]);
+            $nextMinRaw = $nextStmt->fetchColumn();
+
+            if ($nextMinRaw !== false) {
+                $nextMin = (int)$nextMinRaw;
+                $span = max(1, $nextMin - $currentMin);
+                $xpPercent = (int)floor((max(0, min($span, $xpCurrent - $currentMin)) / $span) * 100);
+                $xpLabel = $xpCurrent . ' / ' . $nextMin . ' XP';
             }
-
-            $currentLevelXp = max(0, min($requiredXp, $currentLevelXp));
-            $xpPercent = (int) floor(($currentLevelXp / $requiredXp) * 100);
-            $xpLabel = $currentLevelXp . ' / ' . $requiredXp . ' XP';
+        } catch (\Throwable) {
+            // Fallback seguro: mostra o XP acumulado mesmo antes da migração de gameplay.
         }
 
         $avatar = $this->buildAvatarImage($character, $customizations);
