@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1040" role="img" aria-labelledby="title desc">
+<title id="title">Mapa da Jornada CrismaQuest</title>
+<desc id="desc">Paisagem simbólica de peregrinação com caminho iluminado até uma igreja, representando Pentecostes e a Igreja em missão.</desc>
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#082737"/><stop offset=".42" stop-color="#174f61"/><stop offset=".72" stop-color="#b47b5c"/><stop offset="1" stop-color="#e5bd75"/></linearGradient>
+  <linearGradient id="hill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#163c3a"/><stop offset="1" stop-color="#315f49"/></linearGradient>
+  <radialGradient id="halo"><stop stop-color="#fff2b6" stop-opacity=".95"/><stop offset=".35" stop-color="#f5c96b" stop-opacity=".55"/><stop offset="1" stop-color="#f5c96b" stop-opacity="0"/></radialGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="760" height="1040" fill="url(#sky)"/>
+<circle cx="560" cy="140" r="165" fill="url(#halo)"/>
+<path d="M0 460 C170 360 295 410 420 355 C545 300 640 335 760 290 L760 1040 L0 1040Z" fill="#123635" opacity=".92"/>
+<path d="M0 590 C130 500 260 550 390 480 C520 410 650 485 760 430 L760 1040 L0 1040Z" fill="url(#hill)"/>
+<path d="M0 760 C135 690 260 730 380 655 C520 570 640 650 760 585 L760 1040 L0 1040Z" fill="#274c3e"/>
+<path d="M0 865 C165 810 325 860 475 775 C590 710 665 735 760 700 L760 1040 L0 1040Z" fill="#355941"/>
+<!-- River -->
+<path d="M610 470 C585 575 630 640 570 718 C525 778 520 845 548 1040" fill="none" stroke="#8db5b0" stroke-width="38" opacity=".45"/>
+<path d="M610 470 C585 575 630 640 570 718 C525 778 520 845 548 1040" fill="none" stroke="#bdd4cb" stroke-width="10" opacity=".55"/>
+<!-- Pilgrimage path -->
+<path d="M148 940 C95 845 212 793 196 710 C181 628 306 606 287 522 C268 441 420 424 398 340 C381 273 515 260 518 182" fill="none" stroke="#7a5228" stroke-width="22" stroke-linecap="round" opacity=".45"/>
+<path d="M148 940 C95 845 212 793 196 710 C181 628 306 606 287 522 C268 441 420 424 398 340 C381 273 515 260 518 182" fill="none" stroke="#f3d172" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+<g fill="#fff0a6" filter="url(#glow)"><circle cx="154" cy="923" r="7"/><circle cx="132" cy="838" r="7"/><circle cx="195" cy="760" r="7"/><circle cx="197" cy="687" r="7"/><circle cx="269" cy="620" r="7"/><circle cx="290" cy="544" r="7"/><circle cx="315" cy="474" r="7"/><circle cx="390" cy="414" r="7"/><circle cx="400" cy="339" r="7"/><circle cx="447" cy="286" r="7"/><circle cx="502" cy="236" r="7"/></g>
+<!-- Cathedral -->
+<g transform="translate(454 98)" filter="url(#glow)">
+  <path d="M0 110h128V54h-18V18l-18 22v14H80V0L64 22 48 0v54H36V40L18 18v36H0z" fill="#e1bb70" stroke="#f4db9c" stroke-width="3"/>
+  <rect x="53" y="74" width="22" height="36" rx="11" fill="#6a3b32"/>
+  <rect x="17" y="72" width="14" height="20" fill="#143847"/><rect x="97" y="72" width="14" height="20" fill="#143847"/>
+  <path d="M64 -18v20M55 -9h18" stroke="#f6e2ab" stroke-width="4" stroke-linecap="round"/>
+</g>
+<!-- Dove -->
+<g transform="translate(520 50)" fill="#fff4d1" opacity=".9"><path d="M0 22c18-6 23-16 26-22 3 10 10 19 26 22-15 1-20 8-26 17-5-9-11-16-26-17z"/></g>
+<!-- Landscape motifs -->
+<g fill="#102d2c" opacity=".85"><path d="M65 820l18-62 18 62z"/><path d="M95 790l16-52 16 52z"/><path d="M660 620l20-72 20 72z"/><path d="M690 640l15-50 15 50z"/><path d="M38 590l17-58 17 58z"/><path d="M120 505l19-64 19 64z"/></g>
+<!-- Small chapel -->
+<g transform="translate(118 610)"><rect x="0" y="24" width="56" height="52" fill="#d9b778"/><path d="M-5 25L28 2l33 23z" fill="#b67a52"/><rect x="22" y="47" width="13" height="29" fill="#72493b"/><path d="M28 -9v13M22 -3h12" stroke="#f2d690" stroke-width="3"/></g>
+<!-- Altar -->
+<g transform="translate(500 500)"><rect x="0" y="35" width="88" height="18" rx="3" fill="#b5966d"/><path d="M28 35V17h12v18M53 35V13h10v22" stroke="#e5c679" stroke-width="4"/><ellipse cx="57" cy="11" rx="13" ry="5" fill="#cfaa4c"/><path d="M57 6v-15" stroke="#cfaa4c" stroke-width="4"/></g>
+<!-- Jesus teaching symbolic silhouette -->
+<g transform="translate(96 738)" fill="#d4ad73"><circle cx="20" cy="12" r="9"/><path d="M12 22h17l8 38H4z"/><path d="M27 30l28-17" stroke="#d4ad73" stroke-width="7" stroke-linecap="round"/></g>
+<!-- Stars -->
+<g fill="#f4d690" opacity=".75"><circle cx="102" cy="124" r="2"/><circle cx="180" cy="76" r="2"/><circle cx="276" cy="145" r="2"/><circle cx="672" cy="96" r="2"/><circle cx="620" cy="184" r="2"/></g>
+</svg>
