@@ -30,7 +30,7 @@ $flashes = Flash::all();
                 <div class="cq-field"><label class="cq-label" for="inputPassword">Senha</label><input type="password" id="inputPassword" name="inputPassword" class="cq-input" placeholder="Sua senha" required autocomplete="current-password"></div>
                 <button class="cq-primary" type="submit">Entrar no painel →</button>
             </form>
-            <div class="cq-help">Primeiro acesso? <a href="/registrazioneDoc">Criar conta de catequista</a></div>
+            <div class="cq-help">O acesso de catequista é criado e autorizado pela administração do CrismaQuest.</div>
             <div class="cq-meta" aria-label="Recursos do painel">
                 <div class="cq-meta-card"><div class="cq-meta-icon">🧭</div><small>Planeje a Jornada e os capítulos da turma.</small></div>
                 <div class="cq-meta-card"><div class="cq-meta-icon">📖</div><small>Crie missões catequéticas em poucos passos.</small></div>
