@@ -10,7 +10,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
       <p class="mb-0">Controle as missões, acompanhe a adesão e pause a Chama da turma quando necessário.</p>
     </div>
     <div class="text-end">
-      <strong><?= (int)($studentCount ?? 0) ?> crismandos</strong><br>
+      <strong><?= (int)($studentCount ?? 0) ?> <?= (int)($studentCount ?? 0) === 1 ? 'crismando' : 'crismandos' ?></strong><br>
       <small>Temporada até 09/02/2027</small>
     </div>
   </div>
@@ -121,24 +121,24 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
               <summary>Editar</summary>
               <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/atualizar" class="cq-edit-grid">
           <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
-                <input name="title" value="<?= $h($mission['title']) ?>" required>
-                <select name="mission_type">
-                  <?php foreach (['palavra','quiz','reflexao','acao','igreja','testemunhas','grande','especial'] as $t): ?><option value="<?= $h($t) ?>" <?= $mission['mission_type']===$t?'selected':'' ?>><?= $h($t) ?></option><?php endforeach; ?>
-                </select>
-                <input type="number" name="chapter_no" min="1" max="6" value="<?= (int)$mission['chapter_no'] ?>" required>
-                <input type="number" name="step_no" min="1" max="22" value="<?= $mission['step_no']!==null?(int)$mission['step_no']:'' ?>">
-                <textarea name="body" rows="3" required><?= $h($mission['body']) ?></textarea>
-                <input name="question" value="<?= $h($mission['question'] ?? '') ?>" placeholder="Pergunta do quiz">
-                <input name="options" value="<?= $h(is_string($mission['options_json'] ?? null) ? implode(' | ', json_decode($mission['options_json'], true) ?: []) : '') ?>" placeholder="Opções separadas por |">
-                <input name="correct_answer" maxlength="1" value="<?= $h($mission['correct_answer'] ?? '') ?>" placeholder="A">
-                <input name="feedback" value="<?= $h($mission['feedback'] ?? '') ?>" placeholder="Feedback">
-                <input type="number" name="xp_reward" min="0" max="50" value="<?= (int)$mission['xp_reward'] ?>">
-                <input type="number" name="lumen_reward" min="0" max="20" value="<?= (int)$mission['lumen_reward'] ?>">
-                <input type="number" name="bonus_xp_correct" min="0" max="10" value="<?= (int)$mission['bonus_xp_correct'] ?>">
-                <input type="date" name="available_from" value="<?= $h($mission['available_from']) ?>" required>
-                <input type="date" name="available_until" value="<?= $h($mission['available_until']) ?>" required>
-                <label><input type="checkbox" name="active" value="1" <?= (int)$mission['active']===1?'checked':'' ?>> ativa</label>
-                <button type="submit">Salvar</button>
+                <label class="cq-builder-wide">Título<input name="title" maxlength="180" value="<?= $h($mission['title']) ?>" required></label>
+                <label class="cq-builder-wide">Tipo<select name="mission_type">
+                  <?php foreach (['palavra'=>'Palavra Viva','quiz'=>'Entenda a Fé','reflexao'=>'Desafio da Fé','acao'=>'Evangelho em Ação','igreja'=>'Igreja por Dentro','testemunhas'=>'Testemunhas','grande'=>'Grande Missão','especial'=>'Especial'] as $t=>$label): ?><option value="<?= $h($t) ?>" <?= $mission['mission_type']===$t?'selected':'' ?>><?= $h($label) ?></option><?php endforeach; ?>
+                </select></label>
+                <label>Capítulo<input type="number" name="chapter_no" min="1" max="6" value="<?= (int)$mission['chapter_no'] ?>" required></label>
+                <label>Etapa opcional<input type="number" name="step_no" min="1" max="22" value="<?= $mission['step_no']!==null?(int)$mission['step_no']:'' ?>"></label>
+                <label class="cq-builder-wide">Conteúdo<textarea name="body" rows="4" required><?= $h($mission['body']) ?></textarea></label>
+                <label class="cq-builder-wide">Pergunta do quiz<input name="question" value="<?= $h($mission['question'] ?? '') ?>" placeholder="Deixe vazio se não for quiz"></label>
+                <label class="cq-builder-wide">Opções do quiz<input name="options" value="<?= $h(is_string($mission['options_json'] ?? null) ? implode(' | ', json_decode($mission['options_json'], true) ?: []) : '') ?>" placeholder="Separe as opções por |"></label>
+                <label>Resposta correta<input name="correct_answer" maxlength="1" value="<?= $h($mission['correct_answer'] ?? '') ?>" placeholder="A"></label>
+                <label>Explicação após erro<input name="feedback" value="<?= $h($mission['feedback'] ?? '') ?>"></label>
+                <label>XP<input type="number" name="xp_reward" min="0" max="50" value="<?= (int)$mission['xp_reward'] ?>" required></label>
+                <label>Lúmens<input type="number" name="lumen_reward" min="0" max="20" value="<?= (int)$mission['lumen_reward'] ?>" required></label>
+                <label>Bônus do quiz (XP)<input type="number" name="bonus_xp_correct" min="0" max="10" value="<?= (int)$mission['bonus_xp_correct'] ?>"></label>
+                <label>Abre em<input type="date" name="available_from" value="<?= $h($mission['available_from']) ?>" required></label>
+                <label>Fecha em<input type="date" name="available_until" value="<?= $h($mission['available_until']) ?>" required></label>
+                <label class="cq-builder-check"><input type="checkbox" name="active" value="1" <?= (int)$mission['active']===1?'checked':'' ?>> Missão ativa</label>
+                <button type="submit" class="cq-game-primary cq-builder-wide">Salvar</button>
               </form>
             </details>
           </td>
