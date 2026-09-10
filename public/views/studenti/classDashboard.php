@@ -100,7 +100,7 @@ $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
                 <div class="cq-journey-line" aria-hidden="true">
                     <span class="cq-node current">1</span><span class="cq-node">2</span><span class="cq-node">3</span><span class="cq-node">4</span><span class="cq-node">5</span>
                 </div>
-                <a href="/studenti/jornada" class="cq-secondary-btn">Abrir mapa <i class="fa-solid fa-map"></i></a>
+                <a href="/studenti/classe/dashboard?view=journey" class="cq-secondary-btn">Abrir mapa <i class="fa-solid fa-map"></i></a>
             </section>
         </div>
 
@@ -110,7 +110,7 @@ $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
                 <div class="cq-saint-art" aria-hidden="true"><i class="fa-solid fa-cross"></i></div>
                 <h3 class="mt-3">São Carlo Acutis</h3>
                 <p>Uma vida jovem marcada pela Eucaristia e pelo anúncio do Evangelho também no mundo digital.</p>
-                <a href="/studenti/album" class="cq-secondary-btn">Ver Álbum</a>
+                <a href="/studenti/classe/dashboard?view=album" class="cq-secondary-btn">Ver Álbum</a>
             </section>
 
             <section class="cq-card">
