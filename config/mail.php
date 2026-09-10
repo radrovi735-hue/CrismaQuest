@@ -7,5 +7,5 @@ return [
     'password' => $_ENV['MAIL_PASSWORD'] ?? '',
     'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'ssl',
     'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'info@incognitaelephantes.it',
-    'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'ChronoQuest',
+    'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'CrismaQuest',
 ];
