@@ -2,8 +2,8 @@
     'use strict';
 
     // CrismaQuest saint-avatar registry.
-    // IMPORTANT: faces are never generated or altered by AI here. Each avatar uses
-    // an archival photograph or a historical/devotional artwork hosted on Wikimedia Commons.
+    // Faces are never generated or altered by AI here. Each avatar uses
+    // an archival photograph or historical/devotional artwork hosted on Wikimedia Commons.
     // CrismaQuest only applies the shared circular crop/frame in the interface.
     const saints = {
         'São Carlo Acutis': {
@@ -53,6 +53,30 @@
         'São Sebastião': {
             image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Sebastian_painting.jpg',
             position: '50% 22%'
+        },
+        'São Paulo': {
+            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Almeida_J%C3%BAnior_-_Ap%C3%B3stolo_S%C3%A3o_Paulo%2C_1869.jpg',
+            position: '50% 28%'
+        },
+        'Santa Clara': {
+            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Santa_Chiara_d%27Assisi_di_Giovan_Battista_Moroni.jpg',
+            position: '50% 28%'
+        },
+        'Santa Catarina de Sena': {
+            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Catherine_of_Siena.jpg',
+            position: '50% 27%'
+        },
+        'São João Bosco': {
+            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Portrait_de_Don_Bosco.jpg',
+            position: '50% 28%'
+        },
+        'Santa Teresa de Calcutá': {
+            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Mother_Teresa.jpg',
+            position: '50% 28%'
+        },
+        'Santo Antônio': {
+            image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Anthony_of_Padua_Sano_di_Pietro.webp',
+            position: '50% 27%'
         }
     };
 
