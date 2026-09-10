@@ -92,12 +92,19 @@ final class CrismaQuestJourneyService
 
     private function countCompletedMissions(int $studentId): int
     {
-        if ($studentId <= 0) {
-            return 0;
-        }
+        if ($studentId <= 0) return 0;
         try {
             $stmt = Database::getConnection()->prepare(
-                'SELECT COUNT(DISTINCT fk_esercizio) FROM ct_consegne_studenti WHERE fk_studente=:student_id'
+                'SELECT COUNT(*) FROM (
+                   SELECT m.step_no
+                   FROM cq_missions m
+                   LEFT JOIN cq_mission_completions mc
+                     ON mc.mission_id=m.id
+                    AND mc.user_id=(SELECT fk_utente FROM ct_studenti WHERE id_studente=:student_id LIMIT 1)
+                   WHERE m.step_no IS NOT NULL AND m.active=1
+                   GROUP BY m.step_no
+                   HAVING COUNT(m.id)=SUM(CASE WHEN mc.id IS NULL THEN 0 ELSE 1 END)
+                 ) completed_steps'
             );
             $stmt->execute(['student_id'=>$studentId]);
             return (int)($stmt->fetchColumn() ?: 0);

@@ -10,6 +10,8 @@ use Throwable;
 final class CrismaQuestSocialService
 {
     private const NOTE_LIMIT_PER_DAY = 5;
+    private const CARD_GIFT_LIMIT_PER_WEEK = 1;
+    private const TRADE_LIMIT_PER_WEEK = 3;
     private const NOTE_KEYS = [
         'boa_missao' => 'Boa missão esta semana! 🙏',
         'rezando' => 'Estou rezando por você. 🕊️',
@@ -31,6 +33,7 @@ final class CrismaQuestSocialService
 
         $pdo->prepare('UPDATE cq_peer_notes SET read_at = COALESCE(read_at, NOW()) WHERE recipient_user_id = :u')->execute(['u' => $userId]);
         $pdo->prepare('UPDATE cq_gifts SET opened_at = COALESCE(opened_at, NOW()) WHERE recipient_user_id = :u')->execute(['u' => $userId]);
+        $pdo->prepare('UPDATE cq_trade_offers SET status="expired", responded_at=NOW() WHERE status="pending" AND created_at<DATE_SUB(NOW(), INTERVAL 72 HOUR)')->execute();
 
         return $ctx + [
             'messageOptions' => self::NOTE_KEYS,
@@ -125,6 +128,27 @@ final class CrismaQuestSocialService
         if ($editionId <= 0) return $this->error('Escolha uma carta.');
 
         $pdo = Database::getConnection();
+        $cardInfo = $pdo->prepare(
+            'SELECT sc.slug, sc.name
+             FROM cq_card_editions ce
+             JOIN cq_saint_cards sc ON sc.id=ce.card_id
+             WHERE ce.id=:e LIMIT 1'
+        );
+        $cardInfo->execute(['e'=>$editionId]);
+        $card = $cardInfo->fetch(PDO::FETCH_ASSOC);
+        if (!$card) return $this->error('Carta inválida.');
+        if (in_array((string)$card['slug'], ['sao-carlo-acutis','santa-joana-darc'], true)) {
+            return $this->error('As cartas dos padroeiros da turma são pessoais e não podem ser presenteadas.');
+        }
+        $weeklyGift = $pdo->prepare(
+            'SELECT COUNT(*) FROM cq_gifts
+             WHERE sender_user_id=:u AND card_edition_id IS NOT NULL
+               AND YEARWEEK(created_at,1)=YEARWEEK(NOW(),1)'
+        );
+        $weeklyGift->execute(['u'=>$ctx['userId']]);
+        if ((int)$weeklyGift->fetchColumn() >= self::CARD_GIFT_LIMIT_PER_WEEK) {
+            return $this->error('Você já presenteou uma carta nesta semana.');
+        }
         try {
             $pdo->beginTransaction();
             if ($this->cardQuantity($pdo, $ctx['userId'], $editionId, true) < 2) throw new \RuntimeException('Somente cartas repetidas podem ser presenteadas.');
@@ -149,8 +173,16 @@ final class CrismaQuestSocialService
         if (!$this->isClassmate($ctx['classId'], $ctx['userId'], $recipient)) return $this->error('Destinatário inválido.');
         if ($offered <= 0 || $requested <= 0 || $offered === $requested) return $this->error('Escolha duas cartas diferentes.');
         $pdo = Database::getConnection();
+        $weeklyTrades = $pdo->prepare(
+            'SELECT COUNT(*) FROM cq_trade_offers
+             WHERE offerer_user_id=:u AND YEARWEEK(created_at,1)=YEARWEEK(NOW(),1)'
+        );
+        $weeklyTrades->execute(['u'=>$ctx['userId']]);
+        if ((int)$weeklyTrades->fetchColumn() >= self::TRADE_LIMIT_PER_WEEK) {
+            return $this->error('Você atingiu o limite de 3 propostas de troca nesta semana.');
+        }
         if ($this->cardQuantity($pdo, $ctx['userId'], $offered) < 2) return $this->error('A carta oferecida precisa ser repetida.');
-        if ($this->cardQuantity($pdo, $recipient, $requested) < 1) return $this->error('O colega não possui a carta solicitada.');
+        if ($this->cardQuantity($pdo, $recipient, $requested) < 2) return $this->error('O colega precisa ter uma cópia repetida da carta solicitada.');
         $stmt = $pdo->prepare('INSERT INTO cq_trade_offers (class_id,offerer_user_id,recipient_user_id,offered_card_edition_id,requested_card_edition_id) VALUES (:c,:o,:r,:a,:b)');
         $stmt->execute(['c'=>$ctx['classId'],'o'=>$ctx['userId'],'r'=>$recipient,'a'=>$offered,'b'=>$requested]);
         return $this->success('Proposta de troca enviada.');
@@ -163,7 +195,7 @@ final class CrismaQuestSocialService
         $pdo = Database::getConnection();
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare('SELECT * FROM cq_trade_offers WHERE id=:id AND recipient_user_id=:u AND class_id=:c AND status="pending" FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT * FROM cq_trade_offers WHERE id=:id AND recipient_user_id=:u AND class_id=:c AND status="pending" AND created_at>=DATE_SUB(NOW(), INTERVAL 72 HOUR) FOR UPDATE');
             $stmt->execute(['id'=>$tradeId,'u'=>$ctx['userId'],'c'=>$ctx['classId']]);
             $trade = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$trade) throw new \RuntimeException('Proposta não encontrada ou já respondida.');
@@ -293,7 +325,7 @@ final class CrismaQuestSocialService
     }
     private function pendingTrades(int $classId,int $userId): array
     {
-        $stmt=Database::getConnection()->prepare('SELECT t.*, CONCAT(u.nome," ",u.cognome) offerer_name, so.name offered_name, sr.name requested_name FROM cq_trade_offers t JOIN ct_utenti u ON u.id_utente=t.offerer_user_id JOIN cq_card_editions eo ON eo.id=t.offered_card_edition_id JOIN cq_saint_cards so ON so.id=eo.card_id JOIN cq_card_editions er ON er.id=t.requested_card_edition_id JOIN cq_saint_cards sr ON sr.id=er.card_id WHERE t.class_id=:c AND t.recipient_user_id=:u AND t.status="pending" ORDER BY t.created_at DESC');
+        $stmt=Database::getConnection()->prepare('SELECT t.*, CONCAT(u.nome," ",u.cognome) offerer_name, so.name offered_name, sr.name requested_name FROM cq_trade_offers t JOIN ct_utenti u ON u.id_utente=t.offerer_user_id JOIN cq_card_editions eo ON eo.id=t.offered_card_edition_id JOIN cq_saint_cards so ON so.id=eo.card_id JOIN cq_card_editions er ON er.id=t.requested_card_edition_id JOIN cq_saint_cards sr ON sr.id=er.card_id WHERE t.class_id=:c AND t.recipient_user_id=:u AND t.status="pending" AND t.created_at>=DATE_SUB(NOW(), INTERVAL 72 HOUR) ORDER BY t.created_at DESC');
         $stmt->execute(['c'=>$classId,'u'=>$userId]); return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
     private function sentTrades(int $classId,int $userId): array
