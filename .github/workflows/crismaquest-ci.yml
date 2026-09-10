@@ -41,18 +41,70 @@ jobs:
             exit 1
           fi
 
-  build-deploy-package:
+  database-smoke:
     runs-on: ubuntu-latest
     needs: php-checks
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: crismaquest_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Import ChronoQuest base schema
+        run: mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/finali/chronoquest_italiano.sql
+
+      - name: Apply CrismaQuest database extensions
+        run: |
+          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/001_core.sql
+          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/002_saints_seed.sql
+
+      - name: Verify CrismaQuest tables and seed catalogue
+        run: |
+          TABLES=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='crismaquest_ci' AND table_name IN ('cq_streaks','cq_streak_events','cq_saint_cards','cq_card_editions','cq_user_cards','cq_meetings','cq_attendance','cq_attendance_audit');")
+          SAINTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_saint_cards;")
+          EDITIONS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_card_editions WHERE edition_type='normal';")
+          test "$TABLES" -eq 8
+          test "$SAINTS" -eq 20
+          test "$EDITIONS" -eq 20
+
+      - name: Verify migrations are idempotent
+        run: |
+          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/001_core.sql
+          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/002_saints_seed.sql
+          SAINTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_saint_cards;")
+          test "$SAINTS" -eq 20
+
+  build-deploy-package:
+    runs-on: ubuntu-latest
+    needs:
+      - php-checks
+      - database-smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: mbstring, pdo_mysql, gd, intl
           tools: composer:v2
-      - run: composer install --no-dev --classmap-authoritative --no-interaction --prefer-dist --no-progress
-      - name: Prepare package
+
+      - name: Install production dependencies
+        run: composer install --no-dev --classmap-authoritative --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare deploy package
         run: |
           mkdir -p build
           rsync -a ./ build/CrismaQuest/ \
@@ -60,10 +112,30 @@ jobs:
             --exclude .git \
             --exclude .github \
             --exclude .env
-          cd build && zip -qr CrismaQuest-deploy.zip CrismaQuest
-      - name: Upload package
+          printf 'CrismaQuest\nCommit: %s\nBuilt: %s UTC\nInstitution: Paróquia Nossa Senhora dos Remédios · Arquidiocese de Fortaleza\n' "$GITHUB_SHA" "$(date -u '+%Y-%m-%d %H:%M:%S')" > build/CrismaQuest/BUILD-INFO.txt
+          cd build
+          zip -qr CrismaQuest-deploy.zip CrismaQuest
+          sha256sum CrismaQuest-deploy.zip > CrismaQuest-deploy.sha256
+
+      - name: Validate deploy package
+        run: |
+          unzip -t build/CrismaQuest-deploy.zip
+          test -f build/CrismaQuest/public/index.php
+          test -f build/CrismaQuest/public/css/crismaquest-app.css
+          test -f build/CrismaQuest/public/assets/crismaquest/journey-map.svg
+          test -f build/CrismaQuest/sql/crismaquest/001_core.sql
+          test -f build/CrismaQuest/sql/crismaquest/002_saints_seed.sql
+          test -f build/CrismaQuest/vendor/autoload.php
+          test ! -f build/CrismaQuest/.env
+          test ! -d build/CrismaQuest/.git
+          test ! -d build/CrismaQuest/.github
+          sha256sum -c build/CrismaQuest-deploy.sha256
+
+      - name: Upload approved package
         uses: actions/upload-artifact@v4
         with:
-          name: CrismaQuest-deploy
-          path: build/CrismaQuest-deploy.zip
+          name: CrismaQuest-deploy-approved
+          path: |
+            build/CrismaQuest-deploy.zip
+            build/CrismaQuest-deploy.sha256
           retention-days: 7
