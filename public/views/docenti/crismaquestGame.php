@@ -16,6 +16,41 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </div>
 
 <div class="cq-teacher-panel">
+  <div class="cq-game-kicker">Criador rápido</div>
+  <h2>Nova missão</h2>
+  <p>Crie uma missão em menos de dois minutos. Ela pode nascer como rascunho ou já publicada.</p>
+  <form method="post" action="/docenti/jogo/missao/nova" class="cq-builder-grid">
+    <label>Título<input name="title" maxlength="180" required></label>
+    <label>Tipo
+      <select name="mission_type" required>
+        <option value="palavra">Palavra Viva</option>
+        <option value="quiz">Entenda a Fé</option>
+        <option value="reflexao">Desafio da Fé</option>
+        <option value="acao">Evangelho em Ação</option>
+        <option value="igreja">Igreja por Dentro</option>
+        <option value="testemunhas">Testemunhas</option>
+        <option value="grande">Grande Missão</option>
+        <option value="especial">Especial</option>
+      </select>
+    </label>
+    <label>Capítulo<input type="number" name="chapter_no" min="1" max="6" value="1" required></label>
+    <label>Etapa opcional<input type="number" name="step_no" min="1" max="22"></label>
+    <label class="cq-builder-wide">Conteúdo<textarea name="body" rows="3" required></textarea></label>
+    <label class="cq-builder-wide">Pergunta do quiz <small>deixe vazio se não for quiz</small><input name="question"></label>
+    <label class="cq-builder-wide">Opções do quiz <small>separe por |</small><input name="options" placeholder="A - opção | B - opção | C - opção"></label>
+    <label>Resposta correta<input name="correct_answer" maxlength="1" placeholder="A"></label>
+    <label>Feedback<input name="feedback" placeholder="Explicação após erro"></label>
+    <label>XP<input type="number" name="xp_reward" min="0" max="50" value="10" required></label>
+    <label>Lúmens<input type="number" name="lumen_reward" min="0" max="20" value="3" required></label>
+    <label>Bônus do quiz<input type="number" name="bonus_xp_correct" min="0" max="10" value="5"></label>
+    <label>Abre em<input type="date" name="available_from" value="2026-09-10" required></label>
+    <label>Fecha em<input type="date" name="available_until" value="2027-02-09" required></label>
+    <label class="cq-builder-check"><input type="checkbox" name="active" value="1"> Publicar agora</label>
+    <button type="submit" class="cq-game-primary">Criar missão</button>
+  </form>
+</div>
+
+<div class="cq-teacher-panel">
   <h2>Pausa da Chama</h2>
   <p>Use para recesso, retiro, problema técnico ou situação pastoral. A pausa preserva a sequência e não concede XP.</p>
   <form method="post" action="/docenti/jogo/pausa" class="cq-teacher-pause">
@@ -24,6 +59,21 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <input type="text" name="reason" maxlength="255" placeholder="Motivo opcional">
     <button type="submit">Criar pausa</button>
   </form>
+
+  <hr>
+  <h3 style="font-family:Georgia,serif">Pausa pastoral individual</h3>
+  <p>Preserva a Chama de um crismando sem expor o motivo aos colegas.</p>
+  <form method="post" action="/docenti/jogo/pausa-crismando" class="cq-teacher-pause">
+    <select name="user_id" required>
+      <option value="">Escolha o crismando</option>
+      <?php foreach (($students ?? []) as $s): ?><option value="<?= (int)$s['id_utente'] ?>"><?= $h(trim($s['nome'].' '.$s['cognome'])) ?></option><?php endforeach; ?>
+    </select>
+    <input type="date" name="start_date" required>
+    <input type="date" name="end_date" required>
+    <input type="text" name="reason" maxlength="255" placeholder="Motivo pastoral opcional">
+    <button type="submit">Aplicar pausa</button>
+  </form>
+
   <?php if (($pauses ?? []) !== []): ?>
     <div class="mt-3 small">
       <?php foreach ($pauses as $pause): ?>
@@ -57,6 +107,29 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
               <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/toggle"><button type="submit"><?= (int)$mission['active']===1 ? 'Pausar' : 'Ativar' ?></button></form>
               <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/duplicar"><button type="submit">Duplicar</button></form>
             </div>
+            <details class="cq-edit-mission">
+              <summary>Editar</summary>
+              <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/atualizar" class="cq-edit-grid">
+                <input name="title" value="<?= $h($mission['title']) ?>" required>
+                <select name="mission_type">
+                  <?php foreach (['palavra','quiz','reflexao','acao','igreja','testemunhas','grande','especial'] as $t): ?><option value="<?= $h($t) ?>" <?= $mission['mission_type']===$t?'selected':'' ?>><?= $h($t) ?></option><?php endforeach; ?>
+                </select>
+                <input type="number" name="chapter_no" min="1" max="6" value="<?= (int)$mission['chapter_no'] ?>" required>
+                <input type="number" name="step_no" min="1" max="22" value="<?= $mission['step_no']!==null?(int)$mission['step_no']:'' ?>">
+                <textarea name="body" rows="3" required><?= $h($mission['body']) ?></textarea>
+                <input name="question" value="<?= $h($mission['question'] ?? '') ?>" placeholder="Pergunta do quiz">
+                <input name="options" value="<?= $h(is_string($mission['options_json'] ?? null) ? implode(' | ', json_decode($mission['options_json'], true) ?: []) : '') ?>" placeholder="Opções separadas por |">
+                <input name="correct_answer" maxlength="1" value="<?= $h($mission['correct_answer'] ?? '') ?>" placeholder="A">
+                <input name="feedback" value="<?= $h($mission['feedback'] ?? '') ?>" placeholder="Feedback">
+                <input type="number" name="xp_reward" min="0" max="50" value="<?= (int)$mission['xp_reward'] ?>">
+                <input type="number" name="lumen_reward" min="0" max="20" value="<?= (int)$mission['lumen_reward'] ?>">
+                <input type="number" name="bonus_xp_correct" min="0" max="10" value="<?= (int)$mission['bonus_xp_correct'] ?>">
+                <input type="date" name="available_from" value="<?= $h($mission['available_from']) ?>" required>
+                <input type="date" name="available_until" value="<?= $h($mission['available_until']) ?>" required>
+                <label><input type="checkbox" name="active" value="1" <?= (int)$mission['active']===1?'checked':'' ?>> ativa</label>
+                <button type="submit">Salvar</button>
+              </form>
+            </details>
           </td>
         </tr>
       <?php endforeach; ?>
