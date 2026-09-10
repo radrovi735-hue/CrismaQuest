@@ -10,3 +10,5 @@ RewriteRule ^(config|routes|src|sql|var|vendor|docker)(/|$) - [F,L]
 RewriteRule ^$ public/ [L]
 RewriteCond %{REQUEST_URI} !/public/
 RewriteRule ^(.*)$ public/$1 [L]
+
+# Production recovery marker: incremental deploy is upload-only.
