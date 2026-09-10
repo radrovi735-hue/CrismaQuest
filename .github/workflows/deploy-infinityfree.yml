@@ -126,14 +126,16 @@ jobs:
           count=0
           while IFS= read -r -d '' file; do
             rel="${file#deploy-fast/}"
-            encoded=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$rel")
+            temporary="${rel}.cq-${GITHUB_SHA}"
+            encoded=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$temporary")
             echo "Uploading $rel"
             curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs \
               --user "${FTP_USER}:${FTP_PASS}" \
               --upload-file "$file" \
+              --quote "-RNFR ${temporary##*/}" --quote "-RNTO ${rel##*/}" \
               "ftp://ftpupload.net/htdocs/$encoded"
             count=$((count+1))
-          done < <(find deploy-fast -type f ! -path 'deploy-fast/routes/*' ! -path 'deploy-fast/public/index.php' -print0; find deploy-fast/routes -type f -print0; printf '%s\0' deploy-fast/public/index.php)
+          done < <(printf '%s\0' deploy-fast/public/index.php; find deploy-fast -type f ! -path 'deploy-fast/routes/*' ! -path 'deploy-fast/public/index.php' ! -path 'deploy-fast/src/Controller/*' ! -path 'deploy-fast/public/views/*' -print0; find deploy-fast/src/Controller deploy-fast/public/views deploy-fast/routes -type f -print0)
           echo "Uploaded $count files without deleting remote files."
 
       - name: Setup PHP for full deploy

@@ -149,7 +149,7 @@ final class CrismaQuestGameSetupService
             $stmt = $pdo->prepare(
                 "INSERT INTO cq_game_config (config_key,config_value)
                  VALUES ('setup_phase',:phase)
-                 ON DUPLICATE KEY UPDATE config_value=GREATEST(CAST(config_value AS UNSIGNED),VALUES(config_value))"
+                 ON DUPLICATE KEY UPDATE config_value=GREATEST(CAST(config_value AS UNSIGNED),CAST(VALUES(config_value) AS UNSIGNED))"
             );
             $stmt->execute(['phase'=>(string)$step]);
         }
