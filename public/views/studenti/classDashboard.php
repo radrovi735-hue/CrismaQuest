@@ -1,208 +1,126 @@
 <?php
 
-use App\Service\TranslationService;
-
-$translator = new TranslationService();
 $classroom = $classroom ?? null;
 $student = $student ?? null;
 $availableCharacters = $availableCharacters ?? [];
 $hero = $hero ?? null;
-$team = $team ?? null;
-$teammates = $teammates ?? [];
+
+$displayName = is_array($hero) && !empty($hero['playerName'])
+    ? (string) $hero['playerName']
+    : (is_array($student) ? (string) ($student['username'] ?? 'Peregrino') : 'Peregrino');
+$firstName = trim(explode(' ', $displayName)[0] ?? 'Peregrino');
+$level = is_array($hero) ? (int) ($hero['level'] ?? 1) : 1;
+$xpPercent = is_array($hero) ? max(0, min(100, (int) ($hero['xpPercent'] ?? 0))) : 0;
+$xpLabel = is_array($hero) ? (string) ($hero['xpLabel'] ?? '0 XP') : '0 XP';
+$coins = is_array($hero) ? (int) ($hero['coins'] ?? 0) : 0;
+$avatarSrc = is_array($hero) ? (string) ($hero['avatar']['src'] ?? '') : '';
+$levelNames = [1=>'Peregrino',2=>'Caminhante',3=>'Discípulo',4=>'Servidor',5=>'Mensageiro',6=>'Missionário',7=>'Testemunha',8=>'Enviado'];
+$levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
 ?>
-<div class="container-fluid class-dashboard-page">
-    <?php if (is_array($classroom)): ?>
-        <div class="class-header mb-4" style="background: linear-gradient(135deg, <?= htmlspecialchars((string) $classroom['colore']) ?>, #00acc1);">
-            <div class="d-flex align-items-center gap-3">
-                <div class="class-icon">
-                    <i class="fa-solid <?= htmlspecialchars((string) $classroom['icona']) ?>"></i>
-                </div>
-                <h1 class="class-title">
-                    <?= $translator->translate('student.class_dashboard.class') ?> <?= htmlspecialchars((string) $classroom['nome_classe']) ?> <?= htmlspecialchars((string) $classroom['anno_scolastico']) ?>
-                </h1>
-            </div>
-        </div>
-    <?php endif; ?>
-
+<div class="cq-student-shell">
     <?php if (is_array($student) && (int) ($student['fk_personaggio'] ?? 0) === 0): ?>
-        <div class="character-selection-intro mb-5">
-            <h2 class="selection-title"><?= $translator->translate('student.class_dashboard.character.none_selected') ?></h2>
-            <p class="selection-subtitle"><?= $translator->translate('student.class_dashboard.character.choose_hint.before') ?> <strong><?= $translator->translate('student.class_dashboard.character.choose_hint.name') ?></strong> <?= $translator->translate('student.class_dashboard.character.choose_hint.or') ?> <strong><?= $translator->translate('student.class_dashboard.character.choose_hint.portrait') ?></strong>.</p>
-        </div>
-
-        <div class="row choose-character-selection-grid">
+        <section class="cq-card mb-3">
+            <div class="cq-card-eyebrow">Primeiro passo</div>
+            <h2>Escolha seu peregrino</h2>
+            <p>Seu personagem acompanha a Jornada. Ele representa participação e caminhada — nunca mede fé ou santidade.</p>
+        </section>
+        <div class="row g-3">
             <?php foreach ($availableCharacters as $character): ?>
-                <div class="col-xl-6 col-md-6 mb-4">
-                    <div class="choose-character-card">
+                <div class="col-md-6">
+                    <div class="cq-card h-100">
                         <form method="post" action="/studenti/classe/personaggio" class="m-0">
                             <input type="hidden" name="character_id" value="<?= (int) $character['id_personaggio'] ?>">
-                            <button type="submit" class="choose-character-select w-100 border-0 p-0 text-start bg-transparent">
-                                <div class="choose-character-header">
+                            <div class="d-flex gap-3 align-items-center">
+                                <div class="cq-avatar">
+                                    <img src="<?= htmlspecialchars('/' . ltrim(preg_replace('#^(\./|\.\./)+#', '', (string) $character['immagine']), '/')) ?>" alt="<?= htmlspecialchars((string) $character['nome_personaggio']) ?>">
+                                </div>
+                                <div class="flex-grow-1">
                                     <h3><?= htmlspecialchars((string) $character['nome_personaggio']) ?></h3>
-                                    <span class="select-hint"><?= $translator->translate('student.class_dashboard.character.select_hint') ?></span>
+                                    <p class="mb-2"><?= strip_tags(html_entity_decode((string) $character['descrizione'])) ?></p>
+                                    <button class="cq-primary-btn" type="submit">Escolher <i class="fa-solid fa-arrow-right"></i></button>
                                 </div>
-
-                                <div class="choose-character-body">
-                                    <div class="choose-character-avatar">
-                                        <img src="<?= htmlspecialchars('/' . ltrim(preg_replace('#^(\./|\.\./)+#', '', (string) $character['immagine']), '/')) ?>"
-                                             alt="<?= htmlspecialchars((string) $character['nome_personaggio']) ?>"
-                                             style="border-color:<?= htmlspecialchars((string) $character['bordercolor']) ?>; box-shadow:0 0 12px <?= htmlspecialchars((string) $character['color']) ?>;">
-                                    </div>
-
-                                    <div class="choose-character-description">
-                                        <?= htmlspecialchars_decode(html_entity_decode((string) $character['descrizione'])) ?>
-                                    </div>
-                                </div>
-
-                                <div class="choose-character-stats">
-                                    <div class="choose-stat life">
-                                        <i class="fas fa-heart"></i>
-                                        <span><?= (int) $character['vita_iniziale'] ?> <?= $translator->translate('student.class_dashboard.stat.lives') ?></span>
-                                    </div>
-                                    <div class="choose-stat mana">
-                                        <i class="fas fa-yin-yang"></i>
-                                        <span><?= (int) $character['mana_iniziale'] ?> <?= $translator->translate('student.class_dashboard.stat.mana') ?></span>
-                                    </div>
-                                </div>
-                            </button>
+                            </div>
                         </form>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
-    <?php elseif (is_array($hero)): ?>
-        <div class="character-hero"<?php if (!empty($hero['backgroundImage'])): ?> style="background: url('<?= htmlspecialchars($hero['backgroundImage']) ?>') center/cover no-repeat;"<?php endif; ?>>
-            <div class="character-overlay">
-                <div class="character-top">
-                    <div class="character-avatar-box small-avatar" style="<?= htmlspecialchars((string) ($hero['avatar']['style'] ?? '')) ?>">
-                        <?php if (($hero['avatar']['mode'] ?? 'single') === 'layered'): ?>
-                            <div class="avatar-layered">
-                                <?php if (!empty($hero['avatar']['backgroundSrc'])): ?>
-                                    <img src="<?= htmlspecialchars((string) $hero['avatar']['backgroundSrc']) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.character_background') ?>">
-                                <?php endif; ?>
-                                <?php if (!empty($hero['avatar']['baseSrc'])): ?>
-                                    <img src="<?= htmlspecialchars((string) $hero['avatar']['baseSrc']) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.base_character') ?>">
-                                <?php endif; ?>
-                                <?php if (!empty($hero['avatar']['hairSrc'])): ?>
-                                    <img src="<?= htmlspecialchars((string) $hero['avatar']['hairSrc']) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.character_hair') ?>">
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <img class="avatar-img" src="<?= htmlspecialchars((string) ($hero['avatar']['src'] ?? '')) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.character_avatar') ?>">
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="character-header">
-                        <div class="character-name"><?= htmlspecialchars((string) $hero['displayName']) ?></div>
-                        <div class="player-name"><?= htmlspecialchars((string) $hero['playerName']) ?></div>
-                        <div class="player-meta mt-3">
-                            <span><i class="fas fa-coins"></i> <?= (int) $hero['coins'] ?> <?= $translator->translate('student.class_dashboard.stat.coins') ?></span>
-                            <?php if (is_array($student)): ?>
-                                <span><i class="fas fa-user"></i> <?= htmlspecialchars((string) $student['username']) ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="character-hud compact">
-                        <div class="hud-box life <?= !empty($hero['life']['danger']) ? 'danger' : '' ?>">
-                            <div class="hud-icons">
-                                <?php for ($i = 1; $i <= (int) $hero['life']['maximum']; $i++): ?>
-                                    <i class="fas fa-heart <?= (int) $hero['life']['current'] >= $i ? 'full' : 'empty' ?>"></i>
-                                <?php endfor; ?>
-                                <?php if (!empty($hero['shield']['enabled'])): ?>
-                                    <?php for ($i = 1; $i <= (int) $hero['shield']['maximum']; $i++): ?>
-                                        <i class="fas fa-shield <?= (int) $hero['shield']['current'] >= $i ? 'full-shield' : 'empty text-secondary' ?>"></i>
-                                    <?php endfor; ?>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                        <div class="hud-box mana">
-                            <div class="hud-icons">
-                                <?php for ($i = 1; $i <= (int) $hero['mana']['maximum']; $i++): ?>
-                                    <i class="fas fa-yin-yang <?= (int) $hero['mana']['current'] >= $i ? 'full' : 'empty' ?>"></i>
-                                <?php endfor; ?>
-                            </div>
-                        </div>
-
-                        <div class="hud-box level">
-                            <div class="level-number"><?= (int) $hero['level'] ?></div>
-                            <div class="xp-bar">
-                                <div class="xp-fill" style="width:<?= (int) $hero['xpPercent'] ?>%"></div>
-                            </div>
-                            <div class="xp-text"><?= htmlspecialchars((string) $hero['xpLabel']) ?></div>
-                        </div>
-                    </div>
+    <?php else: ?>
+        <section class="cq-hero-banner" aria-labelledby="cq-greeting">
+            <div class="cq-hero-content">
+                <div class="cq-avatar">
+                    <?php if ($avatarSrc !== ''): ?>
+                        <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="Avatar de <?= htmlspecialchars($firstName) ?>">
+                    <?php else: ?>
+                        <i class="fa-solid fa-person-walking"></i>
+                    <?php endif; ?>
                 </div>
-
-                <div class="layout">
-                    <aside class="sx">
-                        <div class="description-column">
-                            <h3><?= $translator->translate('student.class_dashboard.character.description') ?></h3>
-                            <p><?= $hero['descriptionHtml'] ?></p>
-                        </div>
-                    </aside>
-
-                    <section class="r1">
-                        <div class="party-member main">
-                            <img src="<?= htmlspecialchars((string) $hero['mainCharacterImage']) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.main_character') ?>">
-                            <span class="member-label"><?= $translator->translate('student.class_dashboard.member.you') ?></span>
-                            <?php if (!empty($hero['petImage'])): ?>
-                                <div class="pet-label"><img src="<?= htmlspecialchars((string) $hero['petImage']) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.pet') ?>"></div>
-                            <?php endif; ?>
-                        </div>
-                    </section>
-
-                    <section class="r2">
-                        <div style="width:100%; text-align:center; padding-top:2vh;">
-                            <?php if (is_array($team)): ?>
-                                <div class="team-badge-box floating-team" style="width:100%">
-                                    <div class="team-emblem">
-                                        <?php if (!empty($team['emblem'])): ?>
-                                            <img src="<?= htmlspecialchars((string) $team['emblem']) ?>" alt="<?= htmlspecialchars(sprintf($translator->translate('student.class_dashboard.alt.team_emblem'), (string) $team['name'])) ?>">
-                                        <?php else: ?>
-                                            <div class="emblem-placeholder">
-                                                <i class="fas fa-shield-alt"></i>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="team-content">
-                                        <div class="team-name"><?= htmlspecialchars((string) $team['name']) ?> <?= $translator->translate('student.class_dashboard.team.label') ?></div>
-                                        <div class="team-power-wrapper"<?php if (!empty($team['powerTooltip'])): ?> title="<?= htmlspecialchars((string) $team['powerTooltip'], ENT_QUOTES) ?>"<?php endif; ?>>
-                                            <?php if (!empty($team['powerEnabled'])): ?>
-                                                <form method="post" action="/studenti/classe/potere-squadra" class="m-0">
-                                                    <button type="submit" class="team-power-button">
-                                                        <i class="fas fa-bolt"></i>
-                                                        <span><?= htmlspecialchars((string) $team['powerLabel']) ?></span>
-                                                    </button>
-                                                </form>
-                                            <?php else: ?>
-                                                <button type="button" class="team-power-button disabled" disabled>
-                                                    <i class="fas fa-bolt"></i>
-                                                    <span><?= htmlspecialchars((string) $team['powerLabel']) ?></span>
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="team-power-description"><?= htmlspecialchars((string) $team['powerDescription']) ?></div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </section>
-
-                    <section class="r3">
-                        <?php foreach ($teammates as $teammate): ?>
-                            <div class="party-member cell">
-                                <img src="<?= htmlspecialchars((string) $teammate['image']) ?>" alt="<?= htmlspecialchars(sprintf($translator->translate('student.class_dashboard.alt.teammate'), (string) $teammate['fullName'])) ?>">
-                                <span class="member-label-comp"><?= htmlspecialchars((string) $teammate['fullName']) ?></span>
-                                <?php if (!empty($teammate['petImage'])): ?>
-                                    <div class="pet-label-member"><img src="<?= htmlspecialchars((string) $teammate['petImage']) ?>" alt="<?= $translator->translate('student.class_dashboard.alt.teammate_pet') ?>"></div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </section>
+                <div>
+                    <div class="cq-kicker">Sua caminhada hoje</div>
+                    <h1 class="cq-greeting" id="cq-greeting">Olá, <strong><?= htmlspecialchars($firstName) ?></strong></h1>
+                    <p class="cq-motto">“Jovens de hoje. Discípulos sempre.”</p>
                 </div>
             </div>
+
+            <div class="cq-stats">
+                <div class="cq-stat"><i class="fa-solid fa-star"></i><div><strong><?= htmlspecialchars($xpLabel) ?></strong><span>Experiência</span></div></div>
+                <div class="cq-stat"><i class="fa-solid fa-coins"></i><div><strong><?= $coins ?></strong><span>Lúmens</span></div></div>
+                <div class="cq-stat"><i class="fa-solid fa-fire-flame-curved"></i><div><strong>0 dias</strong><span>Chama</span></div></div>
+            </div>
+
+            <div class="cq-level-row">
+                <div class="cq-level-badge"><div><small>Nível</small><b><?= $level ?></b></div></div>
+                <div>
+                    <div class="cq-level-title"><strong><?= htmlspecialchars($levelTitle) ?></strong><span><?= $xpPercent ?>%</span></div>
+                    <div class="cq-progress" aria-label="Progresso do nível"><span style="width:<?= $xpPercent ?>%"></span></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="cq-grid">
+            <section class="cq-card cq-mission-card">
+                <div class="cq-card-head">
+                    <div class="cq-card-eyebrow"><i class="fa-solid fa-book-bible me-1"></i> Missão de hoje</div>
+                    <span class="cq-chip"><i class="fa-regular fa-clock"></i> 3 min</span>
+                </div>
+                <h2>Uma Palavra para você</h2>
+                <p>Leia uma passagem curta, descubra o que ela anuncia e responda ao desafio do dia.</p>
+                <div class="cq-rewards">
+                    <span class="cq-chip"><i class="fa-solid fa-star"></i> +10 XP</span>
+                    <span class="cq-chip"><i class="fa-solid fa-coins"></i> +5 Lúmens</span>
+                    <span class="cq-chip"><i class="fa-solid fa-fire-flame-curved"></i> mantém a Chama</span>
+                </div>
+                <a href="/studenti/quest" class="cq-primary-btn">Começar missão <i class="fa-solid fa-arrow-right"></i></a>
+            </section>
+
+            <section class="cq-card cq-journey-preview">
+                <div class="cq-card-eyebrow" style="color:#ead39a">Continue sua Jornada</div>
+                <h3>Capítulo 1 — O Chamado</h3>
+                <p>Deus fala, revela-se e chama cada pessoa a responder com fé.</p>
+                <div class="cq-journey-line" aria-hidden="true">
+                    <span class="cq-node current">1</span><span class="cq-node">2</span><span class="cq-node">3</span><span class="cq-node">4</span><span class="cq-node">5</span>
+                </div>
+                <a href="/studenti/jornada" class="cq-secondary-btn">Abrir mapa <i class="fa-solid fa-map"></i></a>
+            </section>
+        </div>
+
+        <div class="cq-mini-grid">
+            <section class="cq-card">
+                <div class="cq-card-head"><div class="cq-card-eyebrow"><i class="fa-solid fa-image-portrait me-1"></i> Carta em destaque</div></div>
+                <div class="cq-saint-art" aria-hidden="true"><i class="fa-solid fa-cross"></i></div>
+                <h3 class="mt-3">São Carlo Acutis</h3>
+                <p>Uma vida jovem marcada pela Eucaristia e pelo anúncio do Evangelho também no mundo digital.</p>
+                <a href="/studenti/album" class="cq-secondary-btn">Ver Álbum</a>
+            </section>
+
+            <section class="cq-card">
+                <div class="cq-card-head"><div class="cq-card-eyebrow"><i class="fa-regular fa-calendar me-1"></i> Próximo encontro</div></div>
+                <div class="cq-meeting-date"><span>SÁB</span><strong>12</strong><span>SET</span></div>
+                <h3>Caminhando juntos</h3>
+                <p>Veja o tema do encontro, prepare-se durante a semana e leve suas perguntas.</p>
+                <div class="clearfix"></div>
+                <a href="/studenti/quest" class="cq-secondary-btn mt-2">Preparar-me</a>
+            </section>
         </div>
     <?php endif; ?>
 </div>
