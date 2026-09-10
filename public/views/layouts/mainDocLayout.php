@@ -74,7 +74,35 @@ endforeach; endif; ?>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/select/1.7.0/js/dataTables.select.min.js"></script>
 <script src="/assets/datatables/dataTables.bootstrap4.min.js"></script>
-<script>window.CQ={baseUrl:'/',timezone:'America/Fortaleza',i18n:<?= json_encode($translator->all(), JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>};</script>
+<script>
+window.CQ={baseUrl:'/',timezone:'America/Fortaleza',i18n:<?= json_encode($translator->all(), JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>};
+window.cqT = function(key, fallback) {
+    return (window.CQ && window.CQ.i18n && window.CQ.i18n[key]) || fallback || key;
+};
+
+// Compatibilidade temporária para módulos herdados do ChronoQuest que ainda usam
+// a API jQuery do Bootstrap 4. O CrismaQuest roda Bootstrap 5.
+if (window.jQuery && window.bootstrap && window.bootstrap.Modal) {
+    window.jQuery.fn.modal = function(action) {
+        return this.each(function() {
+            var instance = window.bootstrap.Modal.getOrCreateInstance(this);
+            if (action === 'hide') instance.hide();
+            else if (action === 'toggle') instance.toggle();
+            else instance.show();
+        });
+    };
+
+    document.addEventListener('click', function(event) {
+        var trigger = event.target.closest('[data-toggle="modal"][data-target]');
+        if (!trigger) return;
+        var selector = trigger.getAttribute('data-target');
+        var modal = selector ? document.querySelector(selector) : null;
+        if (!modal) return;
+        event.preventDefault();
+        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+}
+</script>
 <?php if (!empty($pageScripts ?? [])): foreach ($pageScripts as $script): ?><script src="<?= htmlspecialchars($script) ?>"></script><?php endforeach; endif; ?>
 </body>
 </html>
