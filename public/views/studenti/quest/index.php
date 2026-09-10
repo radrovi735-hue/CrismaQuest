@@ -10,7 +10,7 @@ $quests = $quests ?? [];
     <section class="cq-card mb-3">
         <div class="cq-card-eyebrow">Missões</div>
         <h2>Descobrir, compreender e viver.</h2>
-        <p class="mb-0">Aqui ficam as missões da Jornada: Bíblia, catequese, santos, desafios, oração e Evangelho em ação.</p>
+        <p class="mb-0">Aqui ficam as missões publicadas pelos catequistas: Bíblia, catequese, santos, oração, desafios e Evangelho em ação.</p>
     </section>
 
     <?php if ($quests === []): ?>
@@ -29,8 +29,7 @@ $quests = $quests ?? [];
                 <div class="col-12 col-md-6">
                     <article class="cq-card h-100 cq-mission-card">
                         <div class="cq-card-head">
-                            <div class="cq-card-eyebrow"><i class="fa-solid <?= $index % 3 === 0 ? 'fa-book-bible' : ($index % 3 === 1 ? 'fa-lightbulb' : 'fa-hands-helping') ?> me-1"></i> Missão da Jornada</div>
-                            <span class="cq-chip"><i class="fa-regular fa-clock"></i> 3–7 min</span>
+                            <div class="cq-card-eyebrow"><i class="fa-solid <?= $index % 3 === 0 ? 'fa-book-bible' : ($index % 3 === 1 ? 'fa-lightbulb' : 'fa-hands-helping') ?> me-1"></i> Missão publicada</div>
                         </div>
                         <?php if (!empty($quest['image_quest'])): ?>
                             <div class="mb-3" style="height:120px;border-radius:16px;overflow:hidden;background:#0d3a4a">
@@ -38,9 +37,8 @@ $quests = $quests ?? [];
                             </div>
                         <?php endif; ?>
                         <h3><?= htmlspecialchars((string)($quest['nome_quest'] ?? 'Missão')) ?></h3>
-                        <p>Entre nesta etapa para ver os capítulos e desafios disponíveis.</p>
-                        <div class="cq-rewards"><span class="cq-chip"><i class="fa-solid fa-star"></i> XP</span><span class="cq-chip"><i class="fa-solid fa-coins"></i> Lúmens</span><span class="cq-chip"><i class="fa-solid fa-fire-flame-curved"></i> Chama</span></div>
-                        <a class="cq-primary-btn" href="/studenti/quest/<?= (int)($quest['id_quest'] ?? 0) ?>/piantina">Entrar <i class="fa-solid fa-arrow-right"></i></a>
+                        <p>Entre nesta etapa para ver os capítulos e desafios que estão realmente disponíveis para sua turma.</p>
+                        <a class="cq-primary-btn" href="/studenti/quest/<?= (int)($quest['id_quest'] ?? 0) ?>/piantina">Abrir missão <i class="fa-solid fa-arrow-right"></i></a>
                     </article>
                 </div>
             <?php endforeach; ?>
