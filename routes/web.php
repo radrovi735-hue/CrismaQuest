@@ -221,7 +221,13 @@ $router->post('/studenti/forzieri/apri', [StudentChestsController::class, 'openC
 $router->get('/studenti/badge', [StudentBadgesController::class, 'index']);
 $router->get('/studenti/punizioni', [StudentPunishmentsController::class, 'index']);
 $router->post('/studenti/punizioni/consegna', [StudentPunishmentsController::class, 'upload']);
-$router->get('/studenti/quest', [StudentQuestController::class, 'index']);
+$router->get('/studenti/quest', static function (): void {
+    if (\App\Service\CrismaQuestGameAccess::enabled()) {
+        header('Location: /studenti/missoes');
+        return;
+    }
+    (new StudentQuestController())->index();
+});
 $router->get('/studenti/quest/{questId}/piantina', [StudentQuestController::class, 'map']);
 $router->get('/studenti/quest/{questId}/problemi', [StudentQuestController::class, 'problemDeliveries']);
 $router->get('/studenti/quest/{questId}/capitoli/{chapterId}', [StudentQuestController::class, 'chapterDetail']);

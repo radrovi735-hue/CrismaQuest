@@ -4,14 +4,38 @@ namespace App\Controller;
 
 use App\Core\View;
 use App\Service\CrismaQuestGameService;
+use App\Service\CrismaQuestGameAccess;
 use App\Service\Flash;
 use App\Service\PermissionService;
 
 final class CrismaQuestGameController
 {
+    public function __construct()
+    {
+        $teacher = str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/docenti/');
+        $permission = new PermissionService();
+        $status = $teacher ? $permission->checkPermissionsTeacher() : $permission->checkPermissionsStudent();
+        if ($status !== PermissionService::STATUS_OK) {
+            header('Location: ' . ($teacher ? '/loginDoc' : '/loginStud'));
+            exit;
+        }
+        if (!CrismaQuestGameAccess::enabled()) {
+            Flash::add('info', 'As missões estão sendo preparadas pela catequese.');
+            header('Location: ' . ($teacher ? '/docenti/jogo/setup' : '/studenti/classe/dashboard'));
+            exit;
+        }
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
+            && !CrismaQuestGameAccess::validToken($_POST['csrf_token'] ?? null)) {
+            http_response_code(403);
+            echo 'Sua sessão precisa ser atualizada. Recarregue a página e tente novamente.';
+            exit;
+        }
+    }
+
     public function studentIndex(): void
     {
-        $data = (new CrismaQuestGameService())->getStudentPageData();
+        $step = filter_var($_GET['etapa'] ?? null, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1,'max_range'=>22]]) ?: null;
+        $data = (new CrismaQuestGameService())->getStudentPageData($step);
         if (($data['permissionStatus'] ?? null) !== PermissionService::STATUS_OK) {
             header('Location: /loginStud');
             exit;
@@ -72,6 +96,25 @@ final class CrismaQuestGameController
             'title'=>'Jogo CrismaQuest',
             'pageStyles'=>['/css/crismaquest-game.css','/css/crismaquest-teacher.css'],
             'pageScripts'=>[],
+            'useMathJax'=>false,
+        ], 'mainDocLayout');
+    }
+
+    public function teacherPreview(): void
+    {
+        View::render('studenti/crismaquestGame', (new CrismaQuestGameService())->getTeacherPreviewData() + [
+            'title'=>'Prévia das missões',
+            'pageStyles'=>['/css/crismaquest-app.css','/css/crismaquest-game.css'],
+            'useMathJax'=>false,
+        ], 'mainDocLayout');
+    }
+
+    public function teacherJourney(): void
+    {
+        View::render('studenti/journey', [
+            'preview'=>true,
+            'crismaquestJourney'=>(new \App\Service\CrismaQuestJourneyService())->getSeasonData(),
+            'pageStyles'=>['/css/crismaquest-app.css'],
             'useMathJax'=>false,
         ], 'mainDocLayout');
     }

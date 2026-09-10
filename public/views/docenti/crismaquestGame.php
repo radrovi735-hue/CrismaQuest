@@ -2,6 +2,7 @@
 $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <div class="cq-teacher-panel">
+  <nav class="cq-game-section-head"><a href="/docenti/jogo/previa">Ver como crismando →</a><a href="/docenti/jogo/jornada">Ver Jornada →</a></nav>
   <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
     <div>
       <div class="cq-game-kicker">Motor da temporada</div>
@@ -20,6 +21,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   <h2>Nova missão</h2>
   <p>Crie uma missão em menos de dois minutos. Ela pode nascer como rascunho ou já publicada.</p>
   <form method="post" action="/docenti/jogo/missao/nova" class="cq-builder-grid">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
     <label>Título<input name="title" maxlength="180" required></label>
     <label>Tipo
       <select name="mission_type" required>
@@ -54,6 +56,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   <h2>Pausa da Chama</h2>
   <p>Use para recesso, retiro, problema técnico ou situação pastoral. A pausa preserva a sequência e não concede XP.</p>
   <form method="post" action="/docenti/jogo/pausa" class="cq-teacher-pause">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
     <input type="date" name="start_date" required>
     <input type="date" name="end_date" required>
     <input type="text" name="reason" maxlength="255" placeholder="Motivo opcional">
@@ -64,6 +67,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   <h3 style="font-family:Georgia,serif">Pausa pastoral individual</h3>
   <p>Preserva a Chama de um crismando sem expor o motivo aos colegas.</p>
   <form method="post" action="/docenti/jogo/pausa-crismando" class="cq-teacher-pause">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
     <select name="user_id" required>
       <option value="">Escolha o crismando</option>
       <?php foreach (($students ?? []) as $s): ?><option value="<?= (int)$s['id_utente'] ?>"><?= $h(trim($s['nome'].' '.$s['cognome'])) ?></option><?php endforeach; ?>
@@ -85,7 +89,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
 <div class="cq-teacher-panel">
   <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-    <div><div class="cq-game-kicker">Programação completa</div><h2>56 missões da temporada</h2></div>
+    <div><div class="cq-game-kicker">Programação completa</div><h2><?= count($missions ?? []) ?> missões da temporada</h2></div>
     <small>Duplicatas são criadas desativadas para edição segura.</small>
   </div>
   <div class="table-responsive">
@@ -104,12 +108,15 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
           <td><?= (int)$mission['active']===1 ? '<span class="text-success">ativa</span>' : '<span class="text-secondary">pausada</span>' ?></td>
           <td>
             <div class="cq-teacher-actions">
-              <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/toggle"><button type="submit"><?= (int)$mission['active']===1 ? 'Pausar' : 'Ativar' ?></button></form>
-              <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/duplicar"><button type="submit">Duplicar</button></form>
+              <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/toggle">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>"><button type="submit"><?= (int)$mission['active']===1 ? 'Pausar' : 'Ativar' ?></button></form>
+              <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/duplicar">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>"><button type="submit">Duplicar</button></form>
             </div>
             <details class="cq-edit-mission">
               <summary>Editar</summary>
               <form method="post" action="/docenti/jogo/missao/<?= (int)$mission['id'] ?>/atualizar" class="cq-edit-grid">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
                 <input name="title" value="<?= $h($mission['title']) ?>" required>
                 <select name="mission_type">
                   <?php foreach (['palavra','quiz','reflexao','acao','igreja','testemunhas','grande','especial'] as $t): ?><option value="<?= $h($t) ?>" <?= $mission['mission_type']===$t?'selected':'' ?>><?= $h($t) ?></option><?php endforeach; ?>

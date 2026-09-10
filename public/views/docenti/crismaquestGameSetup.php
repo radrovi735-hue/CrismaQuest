@@ -1,12 +1,12 @@
 <?php
-$ready = (bool)($status['ready'] ?? false);
+$ready = (bool)($status['ready'] ?? false) && (bool)($status['enabled'] ?? false);
 $counts = $status['counts'] ?? [];
 ?>
 <div class="cq-game-shell">
   <section class="cq-game-card">
-    <div class="cq-game-kicker">Instalação isolada</div>
-    <h1 style="font-family:Georgia,serif;color:#173541">Motor do CrismaQuest</h1>
-    <p>Esta página instala apenas as novas tabelas e conteúdos do jogo. Login, dashboard, mapa e missões atuais não são alterados durante esta etapa.</p>
+    <div class="cq-game-kicker">Temporada 2026–2027</div>
+    <h1 style="font-family:Georgia,serif;color:#173541">Preparar a Jornada</h1>
+    <p>Carregue as 22 etapas, 56 missões, 60 Centelhas e recompensas. A Jornada será ativada ao concluir a validação.</p>
 
     <div class="cq-game-stats" style="color:#173541;min-width:0;max-width:680px">
       <div><strong id="cq-setup-tables"><?= (int)($status['schemaTables'] ?? 0) ?>/<?= (int)($status['schemaTablesExpected'] ?? 15) ?></strong><span>tabelas novas</span></div>
@@ -24,8 +24,9 @@ $counts = $status['counts'] ?? [];
     </div>
 
     <?php if (!$ready): ?>
-      <button id="cq-setup-start" class="cq-game-primary" type="button">Instalar Bloco A</button>
+      <button id="cq-setup-start" class="cq-game-primary" type="button">Instalar e ativar a Jornada</button>
     <?php endif; ?>
+    <a id="cq-setup-open" class="cq-game-primary" href="/docenti/jogo" <?= !$ready ? 'hidden' : '' ?>>Abrir missões da temporada</a>
     <pre id="cq-setup-log" style="margin-top:16px;white-space:pre-wrap;font-size:.78rem"></pre>
   </section>
 </div>
@@ -34,6 +35,8 @@ $counts = $status['counts'] ?? [];
   const btn = document.getElementById('cq-setup-start');
   if (!btn) return;
   const lastStep = <?= (int)$lastStep ?>;
+  const csrf = <?= json_encode(\App\Service\CrismaQuestGameAccess::token()) ?>;
+  let nextStep = <?= max(1, min(11, (int)($status['phase'] ?? 0) + 1)) ?>;
   const bar = document.getElementById('cq-setup-bar');
   const status = document.getElementById('cq-setup-status');
   const log = document.getElementById('cq-setup-log');
@@ -49,18 +52,19 @@ $counts = $status['counts'] ?? [];
 
   btn.addEventListener('click', async () => {
     btn.disabled = true;
-    for (let step=1; step<=lastStep; step++) {
+    for (let step=nextStep; step<=lastStep; step++) {
       status.textContent = 'Instalando etapa ' + step + ' de ' + lastStep + '…';
       bar.style.width = Math.round(((step-1)/lastStep)*100) + '%';
       try {
         const response = await fetch('/docenti/jogo/setup/' + step, {
           method:'POST',
-          headers:{'X-Requested-With':'XMLHttpRequest'},
+          headers:{'X-Requested-With':'XMLHttpRequest','X-CSRF-Token':csrf},
           credentials:'same-origin'
         });
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.message || 'Falha na etapa ' + step);
         paint(data);
+        nextStep = step + 1;
         log.textContent += '✓ etapa ' + step + ' concluída\n';
       } catch (e) {
         status.textContent = 'Instalação interrompida com segurança.';
@@ -73,6 +77,7 @@ $counts = $status['counts'] ?? [];
     status.className = 'cq-done';
     status.textContent = 'Gameplay instalado e validado. 22 etapas · 56 missões · 60 Centelhas.';
     btn.remove();
+    document.getElementById('cq-setup-open').hidden = false;
   });
 })();
 </script>

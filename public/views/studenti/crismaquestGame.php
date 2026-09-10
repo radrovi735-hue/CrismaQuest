@@ -12,11 +12,16 @@ $missionLabels = [
 ];
 $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['cognome'] ?? ''));
 ?>
+<?php if (!empty($preview)): ?>
+<p class="alert alert-info">Prévia das missões disponíveis hoje para um crismando que está começando. Os botões de conclusão ficam desativados nesta prévia.</p>
+<fieldset disabled style="border:0;margin:0;padding:0;min-width:0">
+<?php endif; ?>
 <div class="cq-game-shell">
+  <nav class="cq-game-section-head"><a href="<?= !empty($preview) ? '/docenti/jogo/jornada' : '/studenti/classe/dashboard?view=journey' ?>">← Ver Jornada</a><?php if (!empty($selectedStep)): ?><a href="/studenti/missoes">Todas as missões disponíveis</a><?php endif; ?></nav>
   <section class="cq-game-hero">
     <div>
       <div class="cq-game-kicker">Temporada 2026–2027</div>
-      <h1>Missões da Jornada</h1>
+      <h1><?= !empty($selectedStep) ? 'Etapa ' . (int)$selectedStep : 'Missões da Jornada' ?></h1>
       <p><?= $h($studentName ?: 'Sua caminhada') ?> · do chamado ao envio, uma etapa de cada vez.</p>
     </div>
     <div class="cq-game-stats">
@@ -43,11 +48,12 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
         <div class="cq-done"><i class="fa-solid fa-circle-check"></i> Feita hoje. Sua Chama está acesa.</div>
       <?php else: ?>
         <form method="post" action="/studenti/centelha/concluir">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
           <input type="hidden" name="spark_id" value="<?= (int)($spark['id'] ?? 0) ?>">
           <button class="cq-game-primary" type="submit"><i class="fa-solid fa-fire"></i> Concluir Centelha</button>
         </form>
       <?php endif; ?>
-      <small>As três primeiras Centelhas da semana dão XP e Lúmens. As demais mantêm a Chama sem criar farming.</small>
+      <small>As três primeiras Centelhas da semana dão XP e Lúmens. As demais mantêm a Chama sem recompensa extra.</small>
     </section>
   <?php endif; ?>
 
@@ -83,6 +89,7 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
         </div>
 
         <form method="post" action="/studenti/missoes/<?= (int)$mission['id'] ?>/concluir" class="cq-mission-form">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
           <?php if ($mission['mission_type'] === 'quiz'): ?>
             <fieldset>
               <legend><?= $h($mission['question'] ?? 'Escolha uma resposta') ?></legend>
@@ -117,6 +124,7 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
         <p>Uma vez por semana, envie gratuitamente a um colega. Ela pode proteger um dia perdido da Chama.</p>
         <?php if (($classmates ?? []) !== []): ?>
         <form method="post" action="/studenti/chama/intercessao" class="cq-inline-form">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
           <select name="recipient_user_id" required>
             <option value="">Escolha um colega</option>
             <?php foreach ($classmates as $mate): ?><option value="<?= (int)$mate['id_utente'] ?>"><?= $h(trim($mate['nome'].' '.$mate['cognome'])) ?></option><?php endforeach; ?>
@@ -128,7 +136,8 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
         <?php foreach (($intercessions ?? []) as $item): ?>
           <div class="cq-received-aid">
             <span><strong><?= $h($item['sender_name']) ?></strong> enviou uma Vela para você.</span>
-            <form method="post" action="/studenti/chama/intercessao/<?= (int)$item['id'] ?>/usar"><button type="submit">Usar</button></form>
+            <form method="post" action="/studenti/chama/intercessao/<?= (int)$item['id'] ?>/usar">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>"><button type="submit">Usar</button></form>
           </div>
         <?php endforeach; ?>
       </div>
@@ -138,6 +147,7 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
         <h3>Rosário da Jornada</h3>
         <p>Recupera um único dia perdido nas últimas 48 horas. Custa <strong><?= (int)($rosary['cost'] ?? 90) ?> Lúmens</strong> e só pode ser usado uma vez a cada 30 dias.</p>
         <form method="post" action="/studenti/chama/rosario">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
           <button type="submit" class="cq-game-secondary" <?= empty($rosary['available']) ? 'disabled' : '' ?>>Usar Rosário da Jornada</button>
         </form>
         <small>Item simbólico do jogo. Lúmens não compram oração, graça ou objeto religioso real: apenas recuperam a sequência digital.</small>
@@ -157,7 +167,8 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
         <div class="cq-chest">
           <i class="fa-solid fa-box-open"></i>
           <div><strong><?= $h($chest['name']) ?></strong><p><?= $h($chest['description'] ?? '') ?></p><small>liberado em <?= (int)$chest['threshold_xp'] ?> XP</small></div>
-          <form method="post" action="/studenti/baus/<?= (int)$chest['id'] ?>/abrir"><button type="submit">Abrir</button></form>
+          <form method="post" action="/studenti/baus/<?= (int)$chest['id'] ?>/abrir">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>"><button type="submit">Abrir</button></form>
         </div>
       <?php endforeach; ?>
       </div>
@@ -172,3 +183,4 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
     </div><?php endif; ?>
   </section>
 </div>
+<?php if (!empty($preview)): ?></fieldset><?php endif; ?>
