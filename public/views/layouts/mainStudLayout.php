@@ -11,7 +11,7 @@ $unreadSocial = $socialService->getUnreadCountSafe();
 $cosmeticClasses = $socialService->getEquippedCosmeticClassesSafe();
 $navItems = [
     ['/studenti/classe/dashboard', 'home', 'fa-house', 'Início'],
-    ['/studenti/missoes', 'missions', 'fa-compass', 'Missões'],
+    ['/studenti/quest', 'missions', 'fa-compass', 'Missões'],
     ['/studenti/classe/dashboard?view=journey', 'journey', 'fa-map', 'Jornada'],
     ['/studenti/classe/dashboard?view=album', 'album', 'fa-images', 'Álbum'],
     ['/studenti/profilo', 'profile', 'fa-user', 'Perfil'],
@@ -68,7 +68,7 @@ $navItems = [
             'home' => $currentPath === '/studenti/classe/dashboard' && $currentView === 'home',
             'journey' => $currentPath === '/studenti/classe/dashboard' && $currentView === 'journey',
             'album' => $currentPath === '/studenti/classe/dashboard' && $currentView === 'album',
-            'missions' => str_starts_with($currentPath, '/studenti/missoes'),
+            'missions' => str_starts_with($currentPath, '/studenti/quest'),
             'profile' => str_starts_with($currentPath, '/studenti/profilo'),
             default => false,
         };

@@ -10,7 +10,7 @@ final class CrismaQuestHomeService
     public function getData(int $classId, int $studentId, int $userId): array
     {
         return [
-            'mission' => (new CrismaQuestGameService())->getNextMissionForHome($userId),
+            'mission' => $this->nextMission($classId, $studentId),
             'meeting' => $this->nextMeeting($classId),
             'featuredCard' => $this->featuredCard($userId),
         ];
