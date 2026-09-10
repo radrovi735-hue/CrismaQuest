@@ -13,8 +13,10 @@ $iconFor = static function (string $category): string {
     return 'fa-cross';
 };
 $firstCollected = null;
+$hasDuplicate = false;
 foreach ($cards as $candidate) {
-    if ((int)($candidate['quantity'] ?? 0) > 0) { $firstCollected = $candidate; break; }
+    if ((int)($candidate['quantity'] ?? 0) > 0 && $firstCollected === null) $firstCollected = $candidate;
+    if ((int)($candidate['quantity'] ?? 0) > 1) $hasDuplicate = true;
 }
 ?>
 <div class="cq-student-shell">
@@ -30,10 +32,18 @@ foreach ($cards as $candidate) {
                 <div class="cq-progress mt-2" style="background:#e8dcc9"><span style="width:<?= (int)($album['progressPercent'] ?? 0) ?>%"></span></div>
             </div>
         </div>
+        <?php if ($hasDuplicate): ?>
+            <div class="mt-3"><a href="/studenti/correio" class="cq-secondary-btn"><i class="fa-solid fa-right-left"></i> Trocar ou presentear repetidas</a></div>
+        <?php endif; ?>
     </section>
 
-    <div class="d-flex flex-wrap gap-2 mb-3" aria-label="Categorias do álbum">
-        <span class="cq-chip">Todos</span><span class="cq-chip">Jovens</span><span class="cq-chip">Apóstolos</span><span class="cq-chip">Mártires</span><span class="cq-chip">Missionários</span><span class="cq-chip">Doutores</span>
+    <div class="d-flex flex-wrap gap-2 mb-3" aria-label="Filtrar categorias do álbum" id="cqAlbumFilters">
+        <button type="button" class="cq-chip cq-album-filter active" data-filter="">Todos</button>
+        <button type="button" class="cq-chip cq-album-filter" data-filter="jov">Jovens</button>
+        <button type="button" class="cq-chip cq-album-filter" data-filter="apóst">Apóstolos</button>
+        <button type="button" class="cq-chip cq-album-filter" data-filter="mártir">Mártires</button>
+        <button type="button" class="cq-chip cq-album-filter" data-filter="mission">Missionários</button>
+        <button type="button" class="cq-chip cq-album-filter" data-filter="doutor">Doutores</button>
     </div>
 
     <?php if ($cards === []): ?>
@@ -44,7 +54,7 @@ foreach ($cards as $candidate) {
                 $collected = (int)($card['quantity'] ?? 0) > 0;
                 $icon = $iconFor((string)($card['category'] ?? ''));
             ?>
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-6 col-md-4 col-lg-3 cq-album-cell" data-category="<?= htmlspecialchars(mb_strtolower((string)$card['category']), ENT_QUOTES) ?>">
                     <button type="button"
                         class="cq-card h-100 w-100 text-center cq-saint-card-btn"
                         style="padding:10px;border-style:solid;<?= !$collected ? 'filter:grayscale(.82);opacity:.7;cursor:default' : 'cursor:pointer' ?>"
@@ -75,7 +85,6 @@ foreach ($cards as $candidate) {
                         <h2 id="cqDetailName"><?= htmlspecialchars((string)$firstCollected['name']) ?></h2>
                         <p id="cqDetailBio"><?= htmlspecialchars((string)$firstCollected['short_bio']) ?></p>
                         <div style="border-left:3px solid #c8a55c;padding-left:13px;color:#315044;font-weight:700" id="cqDetailTeaching"><?= htmlspecialchars((string)($firstCollected['short_teaching'] ?? '')) ?></div>
-                        <small class="d-block mt-3" style="font-family:Arial,sans-serif;color:#7a746b">As imagens definitivas só serão publicadas após verificação de licença ou autorização de uso.</small>
                     </div>
                 </div>
             </section>
@@ -91,13 +100,23 @@ foreach ($cards as $candidate) {
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
   const detail=document.getElementById('cqSaintDetail');
-  if(!detail) return;
-  document.querySelectorAll('.cq-saint-card-btn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>{
-    document.getElementById('cqDetailName').textContent=btn.dataset.name||'';
-    document.getElementById('cqDetailCategory').textContent=(btn.dataset.category||'')+' · Carta '+String(btn.dataset.number||'').padStart(2,'0');
-    document.getElementById('cqDetailBio').textContent=btn.dataset.bio||'';
-    document.getElementById('cqDetailTeaching').textContent=btn.dataset.teaching||'';
-    detail.scrollIntoView({behavior:'smooth',block:'center'});
+  if(detail){
+    document.querySelectorAll('.cq-saint-card-btn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>{
+      document.getElementById('cqDetailName').textContent=btn.dataset.name||'';
+      document.getElementById('cqDetailCategory').textContent=(btn.dataset.category||'')+' · Carta '+String(btn.dataset.number||'').padStart(2,'0');
+      document.getElementById('cqDetailBio').textContent=btn.dataset.bio||'';
+      document.getElementById('cqDetailTeaching').textContent=btn.dataset.teaching||'';
+      detail.scrollIntoView({behavior:'smooth',block:'center'});
+    }));
+  }
+  const filters=document.querySelectorAll('.cq-album-filter');
+  const cells=document.querySelectorAll('.cq-album-cell');
+  filters.forEach(button=>button.addEventListener('click',()=>{
+    filters.forEach(x=>x.classList.remove('active'));
+    button.classList.add('active');
+    const wanted=(button.dataset.filter||'').toLocaleLowerCase('pt-BR');
+    cells.forEach(cell=>{const category=(cell.dataset.category||'').toLocaleLowerCase('pt-BR');cell.hidden=wanted!==''&&!category.includes(wanted);});
   }));
 });
 </script>
+<style>.cq-album-filter{border:1px solid #e0d0bb;cursor:pointer}.cq-album-filter.active{background:#0d3a4a;color:#fff;border-color:#0d3a4a}</style>
