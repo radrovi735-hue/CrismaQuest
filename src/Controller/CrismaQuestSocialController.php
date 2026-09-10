@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Core\View;
+use App\Service\CrismaQuestLumenLedgerService;
 use App\Service\CrismaQuestSocialService;
 use App\Service\Flash;
 use App\Service\PermissionService;
@@ -11,6 +12,7 @@ final class CrismaQuestSocialController
 {
     public function index(): void
     {
+        (new CrismaQuestLumenLedgerService())->reconcileCurrentStudent();
         $data = (new CrismaQuestSocialService())->getStudentPageData();
         if (($data['permissionStatus'] ?? null) !== PermissionService::STATUS_OK) {
             header('Location: /loginStud'); exit;
