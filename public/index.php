@@ -5,7 +5,6 @@ require __DIR__ . '/../vendor/autoload.php';
 use Dotenv\Dotenv;
 use App\Core\Router;
 use App\Service\CrismaQuestBootstrapService;
-use App\Service\CrismaQuestGameBootstrapService;
 
 if (!file_exists(__DIR__ . '/../.env')) {
     header('Location: /install.php');
@@ -18,7 +17,6 @@ $dotenv->load();
 // Schema maintenance must never take the public app offline.
 try {
     CrismaQuestBootstrapService::ensureInstalled();
-    CrismaQuestGameBootstrapService::ensureInstalled();
 } catch (Throwable $e) {
     error_log('[CrismaQuest bootstrap] ' . $e->getMessage());
 }
