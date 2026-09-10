@@ -4,23 +4,22 @@ namespace App\Service;
 
 use PDO;
 
-// Service per la selezione e creazione delle classi nell'area docenti.
+// Serviço de seleção e criação de turmas na área dos catequistas.
 class TeacherClassService
 {
     private const ALLOWED_ICONS = [
-        'fa-bomb',
+        'fa-dove',
+        'fa-cross',
+        'fa-book-bible',
+        'fa-fire-flame-curved',
+        'fa-church',
+        'fa-compass',
+        'fa-people-group',
+        'fa-seedling',
+        'fa-star',
         'fa-landmark',
-        'fa-fish',
-        'fa-flag',
-        'fa-shield',
-        'fa-rocket',
-        'fa-dragon',
-        'fa-marker',
-        'fa-ghost',
-        'fa-plane',
     ];
 
-    // Restituisce i dati necessari alla pagina di selezione classi del docente.
     public function getSelectionPageData(): array
     {
         $permissionService = new PermissionService();
@@ -40,7 +39,6 @@ class TeacherClassService
         ];
     }
 
-    // Elenca le classi associate al docente/amministratore corrente.
     public function getTeacherClasses(int $userId): array
     {
         $pdo = Database::getConnection();
@@ -58,41 +56,25 @@ class TeacherClassService
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    // Aggiorna una classe esistente del docente corrente.
     public function updateClass(int $classId, string $name, string $icon, string $color): bool
     {
         $permissionService = new PermissionService();
         $userId = $permissionService->getCurrentUserId();
-        if ($userId === null || !$permissionService->isTeacherOrAdmin($userId)) {
-            return false;
-        }
+        if ($userId === null || !$permissionService->isTeacherOrAdmin($userId)) return false;
 
         $class = $this->findTeacherClass($userId, $classId);
-        if ($class === null) {
-            return false;
-        }
+        if ($class === null) return false;
 
         $name = trim($name);
-        if ($name === '') {
-            return false;
-        }
-
-        if (!in_array($icon, self::ALLOWED_ICONS, true)) {
-            $icon = 'fa-flag';
-        }
-
-        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-            $color = '#0d6efd';
-        }
+        if ($name === '') return false;
+        if (!in_array($icon, self::ALLOWED_ICONS, true)) $icon = 'fa-dove';
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) $color = '#6f1d2a';
 
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare(
             'UPDATE ct_classi
-             SET nome_classe = :nome_classe,
-                 icona = :icona,
-                 colore = :colore
-             WHERE id_classe = :id_classe
-               AND eliminata = 0'
+             SET nome_classe = :nome_classe, icona = :icona, colore = :colore
+             WHERE id_classe = :id_classe AND eliminata = 0'
         );
         $stmt->execute([
             'nome_classe' => $name,
@@ -110,27 +92,21 @@ class TeacherClassService
                 'school_year' => $class['anno_scolastico'],
             ]);
         }
-
         return true;
     }
 
-    // Recupera gli anni scolastici disponibili per il form di creazione classe.
     public function getSchoolYears(): array
     {
         $pdo = Database::getConnection();
         $stmt = $pdo->query('SELECT id_anno, anno_scolastico FROM ct_anni_scolastici ORDER BY anno_scolastico DESC');
-
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    // Salva in sessione la classe selezionata se appartiene al docente corrente.
     public function selectClass(int $classId): bool
     {
         $permissionService = new PermissionService();
         $userId = $permissionService->getCurrentUserId();
-        if ($userId === null || !$permissionService->isTeacherOrAdmin($userId)) {
-            return false;
-        }
+        if ($userId === null || !$permissionService->isTeacherOrAdmin($userId)) return false;
 
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare(
@@ -143,10 +119,7 @@ class TeacherClassService
                AND c.eliminata = 0
              LIMIT 1'
         );
-        $stmt->execute([
-            'id_utente' => $userId,
-            'id_classe' => $classId,
-        ]);
+        $stmt->execute(['id_utente' => $userId, 'id_classe' => $classId]);
 
         $class = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$class) {
@@ -161,31 +134,19 @@ class TeacherClassService
             'icon' => $class['icona'],
             'school_year' => $class['anno_scolastico'],
         ]);
-
         return true;
     }
 
-    // Crea una nuova classe, la associa al docente corrente e la seleziona in sessione.
     public function createClass(string $name, int $schoolYearId, string $icon, string $color): bool
     {
         $permissionService = new PermissionService();
         $userId = $permissionService->getCurrentUserId();
-        if ($userId === null || !$permissionService->isTeacherOrAdmin($userId)) {
-            return false;
-        }
+        if ($userId === null || !$permissionService->isTeacherOrAdmin($userId)) return false;
 
         $name = trim($name);
-        if ($name === '' || !$this->schoolYearExists($schoolYearId)) {
-            return false;
-        }
-
-        if (!in_array($icon, self::ALLOWED_ICONS, true)) {
-            $icon = 'fa-flag';
-        }
-
-        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-            $color = '#0d6efd';
-        }
+        if ($name === '' || !$this->schoolYearExists($schoolYearId)) return false;
+        if (!in_array($icon, self::ALLOWED_ICONS, true)) $icon = 'fa-dove';
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) $color = '#6f1d2a';
 
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare(
@@ -200,25 +161,17 @@ class TeacherClassService
         ]);
 
         $classId = (int) $pdo->lastInsertId();
-
-        $stmt = $pdo->prepare(
-            'INSERT INTO ct_utenti_classi (fk_utente, fk_classe) VALUES (:fk_utente, :fk_classe)'
-        );
-        $stmt->execute([
-            'fk_utente' => $userId,
-            'fk_classe' => $classId,
-        ]);
+        $stmt = $pdo->prepare('INSERT INTO ct_utenti_classi (fk_utente, fk_classe) VALUES (:fk_utente, :fk_classe)');
+        $stmt->execute(['fk_utente' => $userId, 'fk_classe' => $classId]);
 
         return $this->selectClass($classId);
     }
 
-    // Controlla che l'anno scolastico selezionato esista davvero.
     private function schoolYearExists(int $schoolYearId): bool
     {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM ct_anni_scolastici WHERE id_anno = :id_anno');
         $stmt->execute(['id_anno' => $schoolYearId]);
-
         return (int) $stmt->fetchColumn() > 0;
     }
 
@@ -235,11 +188,7 @@ class TeacherClassService
                AND c.eliminata = 0
              LIMIT 1'
         );
-        $stmt->execute([
-            'id_utente' => $userId,
-            'id_classe' => $classId,
-        ]);
-
+        $stmt->execute(['id_utente' => $userId, 'id_classe' => $classId]);
         $class = $stmt->fetch(PDO::FETCH_ASSOC);
         return is_array($class) ? $class : null;
     }
