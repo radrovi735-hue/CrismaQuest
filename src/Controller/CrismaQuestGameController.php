@@ -88,9 +88,32 @@ final class CrismaQuestGameController
         $this->teacherRedirect($result);
     }
 
+    public function createMission(): void
+    {
+        $result = (new CrismaQuestGameService())->createMission($_POST);
+        $this->teacherRedirect($result);
+    }
+
+    public function updateMission(string $id): void
+    {
+        $result = (new CrismaQuestGameService())->updateMission((int)$id, $_POST);
+        $this->teacherRedirect($result);
+    }
+
     public function pauseClass(): void
     {
         $result = (new CrismaQuestGameService())->pauseClass(
+            (string)($_POST['start_date'] ?? ''),
+            (string)($_POST['end_date'] ?? ''),
+            (string)($_POST['reason'] ?? '')
+        );
+        $this->teacherRedirect($result);
+    }
+
+    public function pauseStudent(): void
+    {
+        $result = (new CrismaQuestGameService())->pauseStudent(
+            (int)($_POST['user_id'] ?? 0),
             (string)($_POST['start_date'] ?? ''),
             (string)($_POST['end_date'] ?? ''),
             (string)($_POST['reason'] ?? '')
