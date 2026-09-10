@@ -134,6 +134,12 @@ ok(!($r['success'] ?? false), 'segunda Vela na mesma semana bloqueada');
 // 6) Rosary: balance never negative, 48h recovery, 30d cooldown.
 // -----------------------------------------------------------------------------
 $pdo->prepare('UPDATE ct_studenti SET monete=200 WHERE id_studente=:s')->execute(['s'=>$sid101]);
+$twoDaysAgo = (new DateTimeImmutable('now', new DateTimeZone('America/Fortaleza')))->modify('-2 days')->format('Y-m-d');
+$pdo->prepare(
+    'INSERT IGNORE INTO cq_streak_events
+     (user_id,activity_date,source_type,source_id,idempotency_key)
+     VALUES (:u,:d,"stress_history","seed",:k)'
+)->execute(['u'=>$uid101,'d'=>$twoDaysAgo,'k'=>hash('sha256',"stress-history-{$uid101}-{$twoDaysAgo}")]);
 $r = $game->useRosary();
 ok((bool)$r['success'], 'Rosário recupera um dia elegível');
 $balance = (int)$pdo->query("SELECT monete FROM ct_studenti WHERE id_studente={$sid101}")->fetchColumn();
