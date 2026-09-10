@@ -16,6 +16,9 @@ concurrency:
   group: crismaquest-infinityfree-production
   cancel-in-progress: true
 
+env:
+  RECOVERY_BASE: 341cb7efb06e98ccc6d0feaa17c86a76ee5a99cf
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Decide deployment mode
         id: mode
@@ -32,21 +35,28 @@ jobs:
         run: |
           set -euo pipefail
           full=false
+          recovery=false
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.full_deploy }}" == "true" ]]; then full=true; fi
           if git log -1 --pretty=%B | grep -q '\[full-deploy\]'; then full=true; fi
-          if git diff --name-status HEAD^ HEAD | grep -Eq '^(D|R)\s'; then full=true; fi
-          if git diff --name-only HEAD^ HEAD | grep -Eq '^(composer\.json|composer\.lock)$'; then full=true; fi
+          if git log -1 --pretty=%B | grep -q '\[recover-prod\]'; then recovery=true; fi
           echo "full=$full" >> "$GITHUB_OUTPUT"
-          echo "Deployment mode: $([[ "$full" == "true" ]] && echo FULL || echo FAST-INCREMENTAL)"
+          echo "recovery=$recovery" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare changed app files
+      - name: Prepare safe upload-only package
         if: steps.mode.outputs.full != 'true'
         shell: bash
         run: |
           set -euo pipefail
           rm -rf deploy-fast
           mkdir -p deploy-fast
-          git diff --name-only --diff-filter=AM HEAD^ HEAD | while IFS= read -r file; do
+
+          if [[ "${{ steps.mode.outputs.recovery }}" == "true" ]]; then
+            RANGE="${RECOVERY_BASE}..HEAD"
+          else
+            RANGE="HEAD^..HEAD"
+          fi
+
+          git diff --name-only --diff-filter=AM "$RANGE" | while IFS= read -r file; do
             case "$file" in
               .htaccess|public/*|src/*|routes/*|config/*|sql/*|translations/*)
                 if [[ -f "$file" ]]; then
@@ -56,23 +66,39 @@ jobs:
                 ;;
             esac
           done
-          echo "Changed app files: $(find deploy-fast -type f | wc -l)"
-          find deploy-fast -type f -print
 
-      - name: Fast incremental deploy
+          # Critical runtime files are always refreshed during recovery.
+          if [[ "${{ steps.mode.outputs.recovery }}" == "true" ]]; then
+            for file in .htaccess public/.htaccess public/index.php public/views/studenti/dashboard.php; do
+              if [[ -f "$file" ]]; then
+                mkdir -p "deploy-fast/$(dirname "$file")"
+                cp "$file" "deploy-fast/$file"
+              fi
+            done
+          fi
+
+          echo "Files to upload: $(find deploy-fast -type f | wc -l)"
+          find deploy-fast -type f -print | sort
+
+      - name: Safe incremental upload
         if: steps.mode.outputs.full != 'true'
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-        with:
-          server: ftpupload.net
-          username: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
-          password: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          server-dir: htdocs/
-          local-dir: ./deploy-fast/
-          state-name: .crismaquest-fast-state.json
-          timeout: 300000
-          log-level: minimal
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            rel="${file#deploy-fast/}"
+            echo "Uploading $rel"
+            curl --silent --show-error --fail --ftp-create-dirs \
+              --user "${FTP_USER}:${FTP_PASS}" \
+              --upload-file "$file" \
+              "ftp://ftpupload.net/htdocs/$rel"
+            count=$((count+1))
+          done < <(find deploy-fast -type f -print0)
+          echo "Uploaded $count files without deleting remote files."
 
       - name: Setup PHP for full deploy
         if: steps.mode.outputs.full == 'true'
