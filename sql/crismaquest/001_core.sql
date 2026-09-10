@@ -98,3 +98,19 @@ CREATE TABLE IF NOT EXISTS cq_attendance (
   CONSTRAINT fk_cq_attendance_user FOREIGN KEY (user_id) REFERENCES ct_utenti(id_utente) ON DELETE CASCADE,
   CONSTRAINT fk_cq_attendance_marker FOREIGN KEY (marked_by) REFERENCES ct_utenti(id_utente) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS cq_attendance_audit (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  meeting_id INT NOT NULL,
+  user_id INT NOT NULL,
+  old_status VARCHAR(30) NULL,
+  new_status VARCHAR(30) NOT NULL,
+  xp_delta INT NOT NULL DEFAULT 0,
+  changed_by INT NULL,
+  changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_cq_attendance_audit_meeting (meeting_id, changed_at),
+  CONSTRAINT fk_cq_attendance_audit_meeting FOREIGN KEY (meeting_id) REFERENCES cq_meetings(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cq_attendance_audit_user FOREIGN KEY (user_id) REFERENCES ct_utenti(id_utente) ON DELETE CASCADE,
+  CONSTRAINT fk_cq_attendance_audit_changed_by FOREIGN KEY (changed_by) REFERENCES ct_utenti(id_utente) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
