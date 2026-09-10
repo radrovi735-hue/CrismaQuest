@@ -125,7 +125,8 @@ jobs:
         run: |
           unzip -t build/CrismaQuest-deploy.zip
           test -f build/CrismaQuest/public/index.php
-          test -f build/CrismaQuest/public/crismaquest-install.php
+          test -f build/CrismaQuest/public/install.php
+          test -f build/CrismaQuest/src/Service/CrismaQuestBootstrapService.php
           test -f build/CrismaQuest/public/css/crismaquest-app.css
           test -f build/CrismaQuest/public/assets/crismaquest/journey-map.svg
           test -f build/CrismaQuest/sql/crismaquest/001_core.sql
