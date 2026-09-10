@@ -4,12 +4,13 @@ use App\Service\TranslationService;
 
 $translator = new TranslationService();
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$currentView = (string) ($_GET['view'] ?? 'home');
 $navItems = [
-    ['/studenti/classe/dashboard', 'fa-house', 'Início'],
-    ['/studenti/quest', 'fa-compass', 'Missões'],
-    ['/studenti/jornada', 'fa-map', 'Jornada'],
-    ['/studenti/album', 'fa-images', 'Álbum'],
-    ['/studenti/profilo', 'fa-user', 'Perfil'],
+    ['/studenti/classe/dashboard', 'home', 'fa-house', 'Início'],
+    ['/studenti/quest', 'missions', 'fa-compass', 'Missões'],
+    ['/studenti/classe/dashboard?view=journey', 'journey', 'fa-map', 'Jornada'],
+    ['/studenti/classe/dashboard?view=album', 'album', 'fa-images', 'Álbum'],
+    ['/studenti/profilo', 'profile', 'fa-user', 'Perfil'],
 ];
 ?>
 <!DOCTYPE html>
@@ -50,8 +51,17 @@ $navItems = [
 </footer>
 
 <nav class="cq-bottom-nav" aria-label="Navegação principal do CrismaQuest">
-    <?php foreach ($navItems as [$href, $icon, $label]): ?>
-        <?php $active = $currentPath === $href || ($href !== '/studenti/classe/dashboard' && str_starts_with($currentPath, $href . '/')); ?>
+    <?php foreach ($navItems as [$href, $key, $icon, $label]): ?>
+        <?php
+        $active = match ($key) {
+            'home' => $currentPath === '/studenti/classe/dashboard' && $currentView === 'home',
+            'journey' => $currentPath === '/studenti/classe/dashboard' && $currentView === 'journey',
+            'album' => $currentPath === '/studenti/classe/dashboard' && $currentView === 'album',
+            'missions' => str_starts_with($currentPath, '/studenti/quest'),
+            'profile' => str_starts_with($currentPath, '/studenti/profilo'),
+            default => false,
+        };
+        ?>
         <a href="<?= htmlspecialchars($href) ?>" class="<?= $active ? 'active' : '' ?>">
             <i class="fa-solid <?= htmlspecialchars($icon) ?>"></i>
             <span><?= htmlspecialchars($label) ?></span>
