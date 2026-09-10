@@ -30,10 +30,10 @@ $h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
         <h3>Alterar senha</h3>
         <form method="POST" action="/studenti/profilo" class="cq-form-stack mt-3" style="max-width:520px">
             <label>Nova senha
-                <input type="password" name="password" minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres">
+                <input type="password" name="password" minlength="8" required autocomplete="new-password" placeholder="Mínimo de 8 caracteres">
             </label>
             <label>Repita a nova senha
-                <input type="password" name="password_confirm" minlength="8" autocomplete="new-password">
+                <input type="password" name="password_confirm" minlength="8" required autocomplete="new-password">
             </label>
             <button type="submit" class="cq-primary-btn">Salvar nova senha</button>
         </form>
