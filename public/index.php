@@ -4,7 +4,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Dotenv\Dotenv;
 use App\Core\Router;
-use App\Service\CrismaQuestBootstrap;
+use App\Service\CrismaQuestBootstrapService;
 
 if (!file_exists(__DIR__ . '/../.env')) {
     header('Location: /install.php');
@@ -14,10 +14,10 @@ if (!file_exists(__DIR__ . '/../.env')) {
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
-// CrismaQuest keeps its own tables isolated from the ChronoQuest core. The
-// bootstrap is idempotent and silently leaves the upstream app usable if the
-// database account cannot create/alter optional extension tables.
-CrismaQuestBootstrap::ensureSchema();
+// ChronoQuest owns the base schema. CrismaQuest adds isolated extension tables
+// and starter content on the first request after installation. This check is
+// idempotent and verifies the extension is complete before the app continues.
+CrismaQuestBootstrapService::ensureInstalled();
 
 session_start();
 
