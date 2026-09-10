@@ -49,6 +49,7 @@ final class CrismaQuestGameService
             'intercessions'=>$intercessions,
             'rosary'=>$rosary,
             'classmates'=>$this->classmates($pdo, $ctx['classId'], $ctx['userId']),
+            'communityLight'=>$this->communityLight($pdo, $ctx['classId'], $today),
             'levels'=>$pdo->query('SELECT * FROM cq_game_levels ORDER BY level_no')->fetchAll(PDO::FETCH_ASSOC) ?: [],
             'recess'=>$this->isRecess($pdo, $today),
         ];
@@ -530,6 +531,7 @@ final class CrismaQuestGameService
             'classId'=>$classId,
             'studentCount'=>(int)$students->fetchColumn(),
             'missions'=>$missions->fetchAll(PDO::FETCH_ASSOC) ?: [],
+            'students'=>$this->classmates($pdo,$classId,0),
             'pauses'=>$pauses->fetchAll(PDO::FETCH_ASSOC) ?: [],
             'levels'=>$pdo->query('SELECT * FROM cq_game_levels ORDER BY level_no')->fetchAll(PDO::FETCH_ASSOC) ?: [],
         ];
@@ -578,6 +580,114 @@ final class CrismaQuestGameService
             'repeatable'=>$m['repeatable'],'streak'=>$m['grants_streak'],'sort'=>(int)$m['sort_order'] + 1,
         ]);
         return $this->success('Missão duplicada como rascunho. Ela ficou desativada para edição segura.');
+    }
+
+    public function createMission(array $input): array
+    {
+        $ctx = $this->teacherContext();
+        if (!($ctx['ok'] ?? false)) return $this->error('Acesso restrito aos catequistas.');
+        $data = $this->validateMissionInput($input);
+        if (!($data['ok'] ?? false)) return $this->error((string)$data['message']);
+
+        $pdo = Database::getConnection();
+        $slug = 'custom-' . date('YmdHis') . '-' . substr(hash('sha256', microtime(true) . ':' . $ctx['userId']), 0, 8);
+        $stmt = $pdo->prepare(
+            'INSERT INTO cq_missions
+             (slug,step_no,chapter_no,mission_type,title,body,question,options_json,correct_answer,feedback,
+              xp_reward,lumen_reward,bonus_xp_correct,special_reward,available_from,available_until,
+              repeatable,grants_streak,active,sort_order)
+             VALUES
+             (:slug,:step,:chapter,:type,:title,:body,:question,:options,:correct,:feedback,
+              :xp,:lumens,:bonus,NULL,:from,:until,0,1,:active,999)'
+        );
+        $stmt->execute([
+            'slug'=>$slug,
+            'step'=>$data['step_no'],
+            'chapter'=>$data['chapter_no'],
+            'type'=>$data['mission_type'],
+            'title'=>$data['title'],
+            'body'=>$data['body'],
+            'question'=>$data['question'],
+            'options'=>$data['options_json'],
+            'correct'=>$data['correct_answer'],
+            'feedback'=>$data['feedback'],
+            'xp'=>$data['xp_reward'],
+            'lumens'=>$data['lumen_reward'],
+            'bonus'=>$data['bonus_xp_correct'],
+            'from'=>$data['available_from'],
+            'until'=>$data['available_until'],
+            'active'=>$data['active'],
+        ]);
+        return $this->success('Nova missão criada' . ($data['active'] ? ' e publicada.' : ' como rascunho.'));
+    }
+
+    public function updateMission(int $missionId, array $input): array
+    {
+        $ctx = $this->teacherContext();
+        if (!($ctx['ok'] ?? false)) return $this->error('Acesso restrito aos catequistas.');
+        if ($missionId <= 0) return $this->error('Missão inválida.');
+        $data = $this->validateMissionInput($input);
+        if (!($data['ok'] ?? false)) return $this->error((string)$data['message']);
+
+        $stmt = Database::getConnection()->prepare(
+            'UPDATE cq_missions SET
+               step_no=:step,chapter_no=:chapter,mission_type=:type,title=:title,body=:body,
+               question=:question,options_json=:options,correct_answer=:correct,feedback=:feedback,
+               xp_reward=:xp,lumen_reward=:lumens,bonus_xp_correct=:bonus,
+               available_from=:from,available_until=:until,active=:active
+             WHERE id=:id'
+        );
+        $stmt->execute([
+            'step'=>$data['step_no'],
+            'chapter'=>$data['chapter_no'],
+            'type'=>$data['mission_type'],
+            'title'=>$data['title'],
+            'body'=>$data['body'],
+            'question'=>$data['question'],
+            'options'=>$data['options_json'],
+            'correct'=>$data['correct_answer'],
+            'feedback'=>$data['feedback'],
+            'xp'=>$data['xp_reward'],
+            'lumens'=>$data['lumen_reward'],
+            'bonus'=>$data['bonus_xp_correct'],
+            'from'=>$data['available_from'],
+            'until'=>$data['available_until'],
+            'active'=>$data['active'],
+            'id'=>$missionId,
+        ]);
+        return $this->success('Missão atualizada.');
+    }
+
+    public function pauseStudent(int $userId, string $startDate, string $endDate, string $reason): array
+    {
+        $ctx = $this->teacherContext();
+        if (!($ctx['ok'] ?? false)) return $this->error('Acesso restrito aos catequistas.');
+        if (!$this->isClassmate($ctx['classId'], $ctx['userId'], $userId) && $userId !== $ctx['userId']) {
+            // O helper isClassmate exige remetente diferente, então confirmamos diretamente para o estudante.
+            $check = Database::getConnection()->prepare(
+                'SELECT COUNT(*) FROM ct_studenti s
+                 JOIN ct_studenti_classi sc ON sc.fk_studente=s.id_studente
+                 WHERE s.fk_utente=:u AND sc.fk_classe=:c'
+            );
+            $check->execute(['u'=>$userId,'c'=>$ctx['classId']]);
+            if ((int)$check->fetchColumn() === 0) return $this->error('Crismando inválido.');
+        }
+        if (!$this->validDate($startDate) || !$this->validDate($endDate) || $endDate < $startDate) {
+            return $this->error('Informe um intervalo de datas válido.');
+        }
+        if ((int)(new DateTimeImmutable($startDate))->diff(new DateTimeImmutable($endDate))->format('%a') > 90) {
+            return $this->error('A pausa não pode superar 90 dias.');
+        }
+
+        Database::getConnection()->prepare(
+            'INSERT INTO cq_streak_pauses
+             (scope_type,scope_id,start_date,end_date,reason,created_by)
+             VALUES ("user",:u,:a,:b,:r,:creator)'
+        )->execute([
+            'u'=>$userId,'a'=>$startDate,'b'=>$endDate,
+            'r'=>mb_substr(trim($reason),0,255) ?: null,'creator'=>$ctx['userId']
+        ]);
+        return $this->success('Pausa pastoral aplicada apenas a este crismando.');
     }
 
     public function pauseClass(string $startDate, string $endDate, string $reason): array
@@ -908,6 +1018,86 @@ final class CrismaQuestGameService
             if ($this->now() < $next) $available = false;
         }
         return ['cost'=>$cost,'available'=>$available,'lastUsed'=>$lastDate,'nextAvailable'=>$nextAt];
+    }
+
+    private function validateMissionInput(array $input): array
+    {
+        $types = ['palavra','quiz','reflexao','acao','igreja','testemunhas','grande','especial'];
+        $title = trim((string)($input['title'] ?? ''));
+        $body = trim((string)($input['body'] ?? ''));
+        $type = trim((string)($input['mission_type'] ?? ''));
+        $chapter = (int)($input['chapter_no'] ?? 0);
+        $stepRaw = trim((string)($input['step_no'] ?? ''));
+        $step = $stepRaw === '' ? null : (int)$stepRaw;
+        $from = (string)($input['available_from'] ?? '');
+        $until = (string)($input['available_until'] ?? '');
+        $xp = max(0,min(50,(int)($input['xp_reward'] ?? 0)));
+        $lumens = max(0,min(20,(int)($input['lumen_reward'] ?? 0)));
+        $bonus = max(0,min(10,(int)($input['bonus_xp_correct'] ?? 0)));
+        $active = (($input['active'] ?? '') === '1') ? 1 : 0;
+
+        if ($title === '' || mb_strlen($title) > 180) return ['ok'=>false,'message'=>'Informe um título de até 180 caracteres.'];
+        if ($body === '') return ['ok'=>false,'message'=>'Escreva o conteúdo da missão.'];
+        if (!in_array($type,$types,true)) return ['ok'=>false,'message'=>'Tipo de missão inválido.'];
+        if ($chapter < 1 || $chapter > 6) return ['ok'=>false,'message'=>'Capítulo inválido.'];
+        if ($step !== null && ($step < 1 || $step > 22)) return ['ok'=>false,'message'=>'Etapa inválida.'];
+        if (!$this->validDate($from) || !$this->validDate($until) || $until < $from) return ['ok'=>false,'message'=>'Datas de publicação inválidas.'];
+
+        $question = trim((string)($input['question'] ?? ''));
+        $feedback = trim((string)($input['feedback'] ?? ''));
+        $correct = mb_strtoupper(mb_substr(trim((string)($input['correct_answer'] ?? '')),0,1));
+        $optionsJson = null;
+        if ($type === 'quiz') {
+            $raw = trim((string)($input['options'] ?? ''));
+            $parts = array_values(array_filter(array_map('trim',explode('|',$raw)),static fn($x)=>$x!==''));
+            if ($question === '' || count($parts) < 2 || !preg_match('/^[A-F]$/',$correct)) {
+                return ['ok'=>false,'message'=>'Quiz precisa de pergunta, pelo menos duas opções separadas por | e resposta A–F.'];
+            }
+            $optionsJson = json_encode($parts,JSON_UNESCAPED_UNICODE);
+            $bonus = max(1,$bonus);
+        } else {
+            $question = '';
+            $correct = '';
+            $bonus = 0;
+        }
+
+        return [
+            'ok'=>true,'title'=>$title,'body'=>$body,'mission_type'=>$type,
+            'chapter_no'=>$chapter,'step_no'=>$step,'available_from'=>$from,'available_until'=>$until,
+            'xp_reward'=>$xp,'lumen_reward'=>$lumens,'bonus_xp_correct'=>$bonus,'active'=>$active,
+            'question'=>$question === '' ? null : $question,
+            'options_json'=>$optionsJson,
+            'correct_answer'=>$correct === '' ? null : $correct,
+            'feedback'=>$feedback === '' ? null : $feedback,
+        ];
+    }
+
+    private function communityLight(PDO $pdo, int $classId, string $today): array
+    {
+        $date = new DateTimeImmutable($today,new DateTimeZone(self::TZ));
+        $monday = $date->modify('monday this week')->format('Y-m-d');
+        $sunday = $date->modify('sunday this week')->format('Y-m-d');
+        $total = $this->scalar($pdo,'SELECT COUNT(*) FROM ct_studenti_classi WHERE fk_classe=?',[$classId]);
+        if ($total <= 0) return ['percent'=>0,'activeStudents'=>0,'totalStudents'=>0,'tier'=>0,'label'=>'Começando'];
+
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(DISTINCT mc.user_id)
+             FROM cq_mission_completions mc
+             JOIN ct_studenti s ON s.fk_utente=mc.user_id
+             JOIN ct_studenti_classi sc ON sc.fk_studente=s.id_studente
+             WHERE sc.fk_classe=:c AND DATE(mc.completed_at) BETWEEN :a AND :b'
+        );
+        $stmt->execute(['c'=>$classId,'a'=>$monday,'b'=>$sunday]);
+        $active = (int)$stmt->fetchColumn();
+        $percent = (int)floor(($active/$total)*100);
+        $tier = $percent >= 90 ? 3 : ($percent >= 75 ? 2 : ($percent >= 60 ? 1 : 0));
+        $label = match($tier) {
+            3 => 'Baú da Comunhão liberado',
+            2 => 'Comunidade iluminada',
+            1 => 'Primeira luz acesa',
+            default => 'A caminho da primeira luz',
+        };
+        return ['percent'=>$percent,'activeStudents'=>$active,'totalStudents'=>$total,'tier'=>$tier,'label'=>$label];
     }
 
     private function studentContext(): array
