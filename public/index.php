@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Dotenv\Dotenv;
 use App\Core\Router;
 use App\Service\CrismaQuestBootstrapService;
+use App\Service\CrismaQuestGameBootstrapService;
 
 if (!file_exists(__DIR__ . '/../.env')) {
     header('Location: /install.php');
