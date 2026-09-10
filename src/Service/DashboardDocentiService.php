@@ -49,6 +49,20 @@ class DashboardDocentiService
         }
 
         $data['students'] = $this->getStudentsForClass($classId);
+        $data['activeFlames'] = 0;
+        $data['nextMeetingDate'] = null;
+        try {
+            $pdo = Database::getConnection();
+            $today = new \DateTimeImmutable('now', new \DateTimeZone('America/Fortaleza'));
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM cq_streaks st JOIN ct_studenti s ON s.fk_utente=st.user_id JOIN ct_studenti_classi sc ON sc.fk_studente=s.id_studente WHERE sc.fk_classe=? AND st.current_streak>0 AND st.last_qualified_activity_date>=?');
+            $stmt->execute([$classId,$today->modify('-1 day')->format('Y-m-d')]);
+            $data['activeFlames'] = (int)$stmt->fetchColumn();
+            $stmt = $pdo->prepare("SELECT meeting_at FROM cq_meetings WHERE class_id=? AND status='scheduled' AND meeting_at>=? ORDER BY meeting_at LIMIT 1");
+            $stmt->execute([$classId,$today->format('Y-m-d')]);
+            $data['nextMeetingDate'] = $stmt->fetchColumn() ?: null;
+        } catch (\Throwable) {
+            // Existing classes remain usable before the optional catalogues exist.
+        }
 
         return $data;
     }
@@ -172,6 +186,10 @@ class DashboardDocentiService
 
         $pdo = Database::getConnection();
         $placeholders = implode(', ', array_fill(0, count($levels), '?'));
+        if (CrismaQuestGameAccess::enabled()) {
+            $rows = $pdo->query('SELECT l.level_no livello,l.xp_min xp_cumulata,l.xp_min-COALESCE(p.xp_min,0) xp FROM cq_game_levels l LEFT JOIN cq_game_levels p ON p.level_no=l.level_no-1')->fetchAll(PDO::FETCH_ASSOC);
+            return array_column($rows, null, 'livello');
+        }
         $stmt = $pdo->prepare(
             'SELECT livello, xp_cumulata, xp
              FROM ct_xp_livello

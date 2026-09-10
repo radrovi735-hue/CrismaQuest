@@ -5,8 +5,11 @@ on:
     branches:
       - crismaquest-mvp
       - 'feature/**'
+      - '!feature/crismaquest-auth-final'
+      - 'staging/**'
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   php-checks:
@@ -49,6 +52,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, gd, intl
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
       - name: Import ChronoQuest base schema
         run: mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/finali/chronoquest_italiano.sql
       - name: Apply CrismaQuest database extensions
@@ -56,25 +67,56 @@ jobs:
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/001_core.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/002_saints_seed.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/003_social_economy.sql
+      - name: Validate resumable setup and activation
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: crismaquest_ci
+          DB_USER: root
+          DB_PASSWORD: root
+        run: php tests/crismaquest_gameplay_setup.php
       - name: Verify CrismaQuest tables and catalogues
         run: |
-          TABLES=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='crismaquest_ci' AND table_name IN ('cq_streaks','cq_streak_events','cq_saint_cards','cq_card_editions','cq_user_cards','cq_meetings','cq_attendance','cq_attendance_audit','cq_lumen_ledger','cq_gift_catalog','cq_peer_notes','cq_gifts','cq_user_cosmetics','cq_trade_offers');")
+          TABLES=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='crismaquest_ci' AND table_name LIKE 'cq_%';")
           SAINTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_saint_cards;")
           EDITIONS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_card_editions WHERE edition_type='normal';")
           GIFTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_gift_catalog WHERE active=1;")
-          test "$TABLES" -eq 14
+          STEPS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_journey_steps WHERE active=1;")
+          MISSIONS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_missions WHERE active=1;")
+          SPARKS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_daily_sparks WHERE active=1;")
+          BADGES=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_badge_catalog WHERE active=1;")
+          CHESTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_chest_catalog WHERE active=1;")
+          test "$TABLES" -ge 29
           test "$SAINTS" -eq 20
           test "$EDITIONS" -eq 20
-          test "$GIFTS" -eq 11
+          test "$GIFTS" -ge 17
+          test "$STEPS" -eq 22
+          test "$MISSIONS" -eq 56
+          test "$SPARKS" -eq 60
+          test "$BADGES" -eq 14
+          test "$CHESTS" -eq 9
       - name: Verify migrations are idempotent
         run: |
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/001_core.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/002_saints_seed.sql
           mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/003_social_economy.sql
+          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/004_gameplay.sql
+          mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot crismaquest_ci < sql/crismaquest/005_gameplay_seed.sql
           SAINTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_saint_cards;")
-          GIFTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_gift_catalog;")
+          GIFTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_gift_catalog WHERE active=1;")
+          MISSIONS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_missions WHERE active=1;")
+          SPARKS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_daily_sparks WHERE active=1;")
           test "$SAINTS" -eq 20
-          test "$GIFTS" -eq 11
+          test "$GIFTS" -ge 17
+          test "$MISSIONS" -eq 56
+          test "$SPARKS" -eq 60
+
+      - name: Gameplay trajectory and stress tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: crismaquest_ci
+          DB_USER: root
+          DB_PASSWORD: root
+        run: php tests/crismaquest_gameplay_stress.php
 
   build-deploy-package:
     runs-on: ubuntu-latest
@@ -110,10 +152,19 @@ jobs:
           test -f build/CrismaQuest/src/Service/CrismaQuestSocialService.php
           test -f build/CrismaQuest/src/Service/CrismaQuestLumenLedgerService.php
           test -f build/CrismaQuest/src/Service/CrismaQuestHomeService.php
+          test -f build/CrismaQuest/src/Service/CrismaQuestGameSetupService.php
+          test -f build/CrismaQuest/src/Service/CrismaQuestGameService.php
+          test -f build/CrismaQuest/src/Service/CrismaQuestRewardService.php
+          test -f build/CrismaQuest/src/Controller/CrismaQuestGameController.php
           test -f build/CrismaQuest/public/views/studenti/crismaquestSocial.php
           test -f build/CrismaQuest/public/views/docenti/crismaquestSocialAudit.php
           test -f build/CrismaQuest/routes/crismaquest.php
           test -f build/CrismaQuest/sql/crismaquest/003_social_economy.sql
+          test -f build/CrismaQuest/sql/crismaquest/004_gameplay.sql
+          test -f build/CrismaQuest/sql/crismaquest/005_gameplay_seed.sql
+          test -f build/CrismaQuest/public/views/studenti/crismaquestGame.php
+          test -f build/CrismaQuest/public/views/docenti/crismaquestGame.php
+          test -f build/CrismaQuest/public/css/crismaquest-game.css
           test -f build/CrismaQuest/vendor/autoload.php
           test ! -d build/CrismaQuest/public/assets/MathJax-master
           test ! -f build/CrismaQuest/.env

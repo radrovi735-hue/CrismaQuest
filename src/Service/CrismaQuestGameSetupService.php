@@ -33,12 +33,12 @@ final class CrismaQuestGameSetupService
         }
 
         $counts = [
-            'steps' => $this->safeCount($pdo, 'cq_journey_steps', 'active=1'),
-            'missions' => $this->safeCount($pdo, 'cq_missions', 'active=1'),
-            'sparks' => $this->safeCount($pdo, 'cq_daily_sparks', 'active=1'),
+            'steps' => $this->safeCount($pdo, 'cq_journey_steps', 'step_no BETWEEN 1 AND 22'),
+            'missions' => $this->catalogCount($pdo, 'cq_missions'),
+            'sparks' => $this->catalogCount($pdo, 'cq_daily_sparks'),
             'levels' => $this->safeCount($pdo, 'cq_game_levels'),
-            'badges' => $this->safeCount($pdo, 'cq_badge_catalog', 'active=1'),
-            'chests' => $this->safeCount($pdo, 'cq_chest_catalog', 'active=1'),
+            'badges' => $this->catalogCount($pdo, 'cq_badge_catalog'),
+            'chests' => $this->catalogCount($pdo, 'cq_chest_catalog'),
         ];
 
         $phase = 0;
@@ -63,6 +63,7 @@ final class CrismaQuestGameSetupService
 
         return [
             'ready'=>$ready,
+            'enabled'=>CrismaQuestGameAccess::enabled(),
             'phase'=>$phase,
             'schemaTables'=>$existing,
             'schemaTablesExpected'=>count($this->schemaTables),
@@ -138,7 +139,7 @@ final class CrismaQuestGameSetupService
                 }
                 $pdo->exec(
                     "INSERT INTO cq_game_config (config_key,config_value)
-                     VALUES ('gameplay_ready','1')
+                     VALUES ('gameplay_ready','1'),('gameplay_enabled','1')
                      ON DUPLICATE KEY UPDATE config_value='1'"
                 );
                 break;
@@ -148,7 +149,7 @@ final class CrismaQuestGameSetupService
             $stmt = $pdo->prepare(
                 "INSERT INTO cq_game_config (config_key,config_value)
                  VALUES ('setup_phase',:phase)
-                 ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)"
+                 ON DUPLICATE KEY UPDATE config_value=GREATEST(CAST(config_value AS UNSIGNED),VALUES(config_value))"
             );
             $stmt->execute(['phase'=>(string)$step]);
         }
@@ -201,7 +202,28 @@ final class CrismaQuestGameSetupService
 
     private function seedStatements(): array
     {
-        return $this->readStatements(dirname(__DIR__,2) . '/sql/crismaquest/005_gameplay_seed.sql');
+        return array_map(static function (string $statement): string {
+            // Repeating setup must preserve mission corrections and paused content.
+            if (preg_match('/^INSERT INTO (cq_missions|cq_daily_sparks) /', $statement)) {
+                return preg_replace('/ON DUPLICATE KEY UPDATE .+$/s', 'ON DUPLICATE KEY UPDATE slug=slug', $statement) ?? $statement;
+            }
+            return $statement;
+        }, $this->readStatements(dirname(__DIR__,2) . '/sql/crismaquest/005_gameplay_seed.sql'));
+    }
+
+    private function catalogCount(PDO $pdo, string $table): int
+    {
+        if (!$this->tableExists($pdo, $table)) return 0;
+        $slugs = [];
+        foreach ($this->seedStatements() as $statement) {
+            if (preg_match("/^INSERT INTO " . preg_quote($table, '/') . " \\(.*?\\) VALUES \\('([^']+)'/s", $statement, $match)) {
+                $slugs[] = $match[1];
+            }
+        }
+        if ($slugs === []) return 0;
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM ' . $table . ' WHERE slug IN (' . implode(',', array_fill(0, count($slugs), '?')) . ')');
+        $stmt->execute($slugs);
+        return (int)$stmt->fetchColumn();
     }
 
     private function readStatements(string $path): array

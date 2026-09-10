@@ -1,6 +1,9 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+$loader = require __DIR__ . '/../vendor/autoload.php';
+// FTP updates can add App classes without rebuilding the remote Composer map.
+// Keep Composer's PSR-4 fallback available for those newly deployed classes.
+$loader->setClassMapAuthoritative(false);
 
 use Dotenv\Dotenv;
 use App\Core\Router;

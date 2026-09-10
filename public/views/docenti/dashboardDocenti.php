@@ -17,14 +17,14 @@ $withCharacter = count(array_filter($students, static fn($s) => !empty($s['hasCh
     <section class="cq-teacher-cards">
         <article class="cq-kpi"><i class="fa-solid fa-users"></i><strong><?= $totalStudents ?></strong><span>crismandos na turma</span></article>
         <article class="cq-kpi"><i class="fa-solid fa-person-walking"></i><strong><?= $withCharacter ?></strong><span>já iniciaram a Jornada</span></article>
-        <article class="cq-kpi"><i class="fa-solid fa-fire-flame-curved"></i><strong>—</strong><span>Chamas ativas · integração em andamento</span></article>
-        <article class="cq-kpi"><i class="fa-regular fa-calendar"></i><strong>12/09</strong><span>próximo encontro da turma</span></article>
+        <article class="cq-kpi"><i class="fa-solid fa-fire-flame-curved"></i><strong><?= (int)($activeFlames ?? 0) ?></strong><span>Chamas ativas</span></article>
+        <article class="cq-kpi"><i class="fa-regular fa-calendar"></i><strong><?= !empty($nextMeetingDate) ? date('d/m',strtotime($nextMeetingDate)) : '—' ?></strong><span>próximo encontro da turma</span></article>
     </section>
 
     <section class="cq-actions">
-        <a class="cq-action red" href="/docenti/quest"><i class="fa-solid fa-plus"></i> Criar missão</a>
+        <a class="cq-action red" href="/docenti/jogo"><i class="fa-solid fa-plus"></i> Criar missão</a>
         <a class="cq-action blue" href="/docenti/dashboard?view=attendance"><i class="fa-solid fa-calendar-check"></i> Marcar presença</a>
-        <a class="cq-action gold" href="/docenti/quest"><i class="fa-solid fa-comment-dots"></i> Revisar respostas</a>
+        <a class="cq-action gold" href="/docenti/jogo"><i class="fa-solid fa-comment-dots"></i> Revisar respostas</a>
         <a class="cq-action green" href="/docenti/studenti"><i class="fa-solid fa-users"></i> Ver turma</a>
     </section>
 

@@ -22,7 +22,7 @@ final class CrismaQuestGameService
         $this->streaks = new CrismaQuestStreakService();
     }
 
-    public function getStudentPageData(): array
+    public function getStudentPageData(?int $step = null): array
     {
         $ctx = $this->studentContext();
         if (!($ctx['ok'] ?? false)) return $ctx;
@@ -30,6 +30,7 @@ final class CrismaQuestGameService
         $pdo = Database::getConnection();
         $today = $this->today();
         $missions = $this->availableMissions($pdo, $ctx['userId'], $today);
+        if ($step !== null) $missions = array_values(array_filter($missions, static fn(array $m): bool => (int)$m['step_no'] === $step));
         $spark = $this->currentSpark($pdo, $ctx['userId'], $today);
         $streak = $this->streaks->getStatus($ctx['userId']);
         $progress = $this->progressData($pdo, $ctx['userId']);
@@ -40,6 +41,7 @@ final class CrismaQuestGameService
 
         return $ctx + [
             'today'=>$today,
+            'selectedStep'=>$step,
             'missions'=>$missions,
             'spark'=>$spark,
             'streak'=>$streak,
@@ -53,6 +55,22 @@ final class CrismaQuestGameService
             'levels'=>$pdo->query('SELECT * FROM cq_game_levels ORDER BY level_no')->fetchAll(PDO::FETCH_ASSOC) ?: [],
             'recess'=>$this->isRecess($pdo, $today),
         ];
+    }
+
+    public function getTeacherPreviewData(): array
+    {
+        $ctx = $this->teacherContext();
+        if (!($ctx['ok'] ?? false)) return $ctx;
+        $pdo = Database::getConnection();
+        $today = $this->today();
+        return ['preview'=>true,'permissionStatus'=>PermissionService::STATUS_OK,
+            'student'=>['nome'=>'Prévia do crismando','cognome'=>''],
+            'today'=>$today,'xp'=>0,'balance'=>0,'streak'=>['current'=>0,'longest'=>0],
+            'progress'=>['completedSteps'=>0,'completedMissions'=>0],
+            'missions'=>$this->availableMissions($pdo,0,$today),
+            'spark'=>$this->currentSpark($pdo,0,$today),'recess'=>$this->isRecess($pdo,$today),
+            'chests'=>[],'badges'=>[],'intercessions'=>[],'classmates'=>[],
+            'rosary'=>['cost'=>90,'available'=>false]];
     }
 
     public function completeMission(int $missionId, array $input): array

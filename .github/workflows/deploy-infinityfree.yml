@@ -14,17 +14,20 @@ on:
 
 concurrency:
   group: crismaquest-infinityfree-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  validate:
+    uses: ./.github/workflows/crismaquest-ci.yml
   deploy:
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Decide deployment mode
         id: mode
@@ -87,24 +90,30 @@ jobs:
           echo "Targeted repair files: $(find deploy-fast -type f | wc -l)"
           find deploy-fast -type f -print | sort
 
-      - name: Prepare normal incremental package
+      - name: Confirm current production revision
+        shell: bash
+        run: |
+          test "$(git ls-remote origin refs/heads/feature/crismaquest-auth-final | cut -f1)" = "$(git rev-parse HEAD)"
+
+      - name: Prepare cumulative release package
         if: steps.mode.outputs.full != 'true' && steps.mode.outputs.repair != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf deploy-fast
           mkdir -p deploy-fast
-          git diff --name-only --diff-filter=AM HEAD^ HEAD | while IFS= read -r file; do
+          # Last verified production baseline. Include every change since it, even across skipped commits.
+          baseline=f5da46147a56d8edf203cf5e1623059a7ceb0be1
+          git diff --name-only --diff-filter=AM "$baseline" HEAD | while IFS= read -r file; do
             case "$file" in
               .htaccess|public/*|src/*|routes/*|config/*|sql/*|translations/*)
-                if [[ -f "$file" ]]; then
-                  mkdir -p "deploy-fast/$(dirname "$file")"
-                  cp "$file" "deploy-fast/$file"
-                fi
+                mkdir -p "deploy-fast/$(dirname "$file")"
+                cp "$file" "deploy-fast/$file"
                 ;;
             esac
           done
-          echo "Incremental files: $(find deploy-fast -type f | wc -l)"
+          mkdir -p deploy-fast/public/assets/fontawesome-7.2/css deploy-fast/public/assets/fontawesome-7.2/webfonts
+          cp public/assets/fontawesome-7.2/css/all.min.css deploy-fast/public/assets/fontawesome-7.2/css/
+          cp public/assets/fontawesome-7.2/webfonts/*.woff2 deploy-fast/public/assets/fontawesome-7.2/webfonts/
 
       - name: Safe upload-only deploy
         if: steps.mode.outputs.full != 'true'
@@ -124,7 +133,7 @@ jobs:
               --upload-file "$file" \
               "ftp://ftpupload.net/htdocs/$encoded"
             count=$((count+1))
-          done < <(find deploy-fast -type f -print0)
+          done < <(find deploy-fast -type f ! -path 'deploy-fast/routes/*' ! -path 'deploy-fast/public/index.php' -print0; find deploy-fast/routes -type f -print0; printf '%s\0' deploy-fast/public/index.php)
           echo "Uploaded $count files without deleting remote files."
 
       - name: Setup PHP for full deploy
