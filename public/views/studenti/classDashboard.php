@@ -5,6 +5,12 @@ $student = $student ?? null;
 $availableCharacters = $availableCharacters ?? [];
 $hero = $hero ?? null;
 $crismaquestStreak = $crismaquestStreak ?? ['current'=>0,'longest'=>0,'lastDate'=>null,'freezes'=>0];
+$journey = $crismaquestJourney ?? ['currentChapter'=>null,'completedSteps'=>0,'totalSteps'=>22,'progressPercent'=>0];
+$home = $crismaquestHome ?? [];
+$mission = $home['mission'] ?? null;
+$meeting = $home['meeting'] ?? null;
+$featuredCard = $home['featuredCard'] ?? null;
+$currentChapter = is_array($journey['currentChapter'] ?? null) ? $journey['currentChapter'] : null;
 
 $displayName = is_array($hero) && !empty($hero['playerName'])
     ? (string) $hero['playerName']
@@ -18,6 +24,22 @@ $avatarSrc = is_array($hero) ? (string) ($hero['avatar']['src'] ?? '') : '';
 $streakDays = max(0, (int)($crismaquestStreak['current'] ?? 0));
 $levelNames = [1=>'Peregrino',2=>'Caminhante',3=>'Discípulo',4=>'Servidor',5=>'Mensageiro',6=>'Missionário',7=>'Testemunha',8=>'Enviado'];
 $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
+$h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+
+$meetingDate = null;
+if (is_array($meeting) && !empty($meeting['meeting_at'])) {
+    try {
+        $dt = new DateTimeImmutable((string)$meeting['meeting_at']);
+        $months = [1=>'JAN',2=>'FEV',3=>'MAR',4=>'ABR',5=>'MAI',6=>'JUN',7=>'JUL',8=>'AGO',9=>'SET',10=>'OUT',11=>'NOV',12=>'DEZ'];
+        $weekdays = [0=>'DOM',1=>'SEG',2=>'TER',3=>'QUA',4=>'QUI',5=>'SEX',6=>'SÁB'];
+        $meetingDate = [
+            'weekday' => $weekdays[(int)$dt->format('w')] ?? '',
+            'day' => $dt->format('d'),
+            'month' => $months[(int)$dt->format('n')] ?? '',
+            'time' => $dt->format('H:i'),
+        ];
+    } catch (Throwable) {}
+}
 ?>
 <div class="cq-student-shell">
     <?php if (is_array($student) && (int) ($student['fk_personaggio'] ?? 0) === 0): ?>
@@ -34,11 +56,11 @@ $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
                             <input type="hidden" name="character_id" value="<?= (int) $character['id_personaggio'] ?>">
                             <div class="d-flex gap-3 align-items-center">
                                 <div class="cq-avatar">
-                                    <img src="<?= htmlspecialchars('/' . ltrim(preg_replace('#^(\./|\.\./)+#', '', (string) $character['immagine']), '/')) ?>" alt="<?= htmlspecialchars((string) $character['nome_personaggio']) ?>">
+                                    <img src="<?= $h('/' . ltrim(preg_replace('#^(\./|\.\./)+#', '', (string) $character['immagine']), '/')) ?>" alt="<?= $h($character['nome_personaggio']) ?>">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h3><?= htmlspecialchars((string) $character['nome_personaggio']) ?></h3>
-                                    <p class="mb-2"><?= strip_tags(html_entity_decode((string) $character['descrizione'])) ?></p>
+                                    <h3><?= $h($character['nome_personaggio']) ?></h3>
+                                    <p class="mb-2"><?= $h(trim(strip_tags(html_entity_decode((string)$character['descrizione'], ENT_QUOTES | ENT_HTML5, 'UTF-8')))) ?></p>
                                     <button class="cq-primary-btn" type="submit">Escolher <i class="fa-solid fa-arrow-right"></i></button>
                                 </div>
                             </div>
@@ -52,28 +74,28 @@ $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
             <div class="cq-hero-content">
                 <div class="cq-avatar">
                     <?php if ($avatarSrc !== ''): ?>
-                        <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="Avatar de <?= htmlspecialchars($firstName) ?>">
+                        <img src="<?= $h($avatarSrc) ?>" alt="Avatar de <?= $h($firstName) ?>">
                     <?php else: ?>
                         <i class="fa-solid fa-person-walking"></i>
                     <?php endif; ?>
                 </div>
                 <div>
                     <div class="cq-kicker">Sua caminhada hoje</div>
-                    <h1 class="cq-greeting" id="cq-greeting">Olá, <strong><?= htmlspecialchars($firstName) ?></strong></h1>
-                    <p class="cq-motto">“Jovens de hoje. Discípulos sempre.”</p>
+                    <h1 class="cq-greeting" id="cq-greeting">Olá, <strong><?= $h($firstName) ?></strong></h1>
+                    <p class="cq-motto">Uma jornada de participação, descoberta e comunidade.</p>
                 </div>
             </div>
 
             <div class="cq-stats">
-                <div class="cq-stat"><i class="fa-solid fa-star"></i><div><strong><?= htmlspecialchars($xpLabel) ?></strong><span>Experiência</span></div></div>
-                <div class="cq-stat"><i class="fa-solid fa-coins"></i><div><strong><?= $coins ?></strong><span>Lúmens</span></div></div>
+                <div class="cq-stat"><i class="fa-solid fa-star"></i><div><strong><?= $h($xpLabel) ?></strong><span>Experiência</span></div></div>
+                <div class="cq-stat"><i class="fa-solid fa-sun"></i><div><strong><?= $coins ?></strong><span>Lúmens</span></div></div>
                 <div class="cq-stat"><i class="fa-solid fa-fire-flame-curved"></i><div><strong><?= $streakDays ?> <?= $streakDays === 1 ? 'dia' : 'dias' ?></strong><span>Chama</span></div></div>
             </div>
 
             <div class="cq-level-row">
                 <div class="cq-level-badge"><div><small>Nível</small><b><?= $level ?></b></div></div>
                 <div>
-                    <div class="cq-level-title"><strong><?= htmlspecialchars($levelTitle) ?></strong><span><?= $xpPercent ?>%</span></div>
+                    <div class="cq-level-title"><strong><?= $h($levelTitle) ?></strong><span><?= $xpPercent ?>%</span></div>
                     <div class="cq-progress" aria-label="Progresso do nível"><span style="width:<?= $xpPercent ?>%"></span></div>
                 </div>
             </div>
@@ -82,47 +104,73 @@ $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
         <div class="cq-grid">
             <section class="cq-card cq-mission-card">
                 <div class="cq-card-head">
-                    <div class="cq-card-eyebrow"><i class="fa-solid fa-book-bible me-1"></i> Missão de hoje</div>
-                    <span class="cq-chip"><i class="fa-regular fa-clock"></i> 3 min</span>
+                    <div class="cq-card-eyebrow"><i class="fa-solid fa-book-bible me-1"></i> Próxima missão</div>
                 </div>
-                <h2>Uma Palavra para você</h2>
-                <p>Leia uma passagem curta, descubra o que ela anuncia e responda ao desafio do dia.</p>
-                <div class="cq-rewards">
-                    <span class="cq-chip"><i class="fa-solid fa-star"></i> +10 XP</span>
-                    <span class="cq-chip"><i class="fa-solid fa-coins"></i> +5 Lúmens</span>
-                    <span class="cq-chip"><i class="fa-solid fa-fire-flame-curved"></i> mantém a Chama</span>
-                </div>
-                <a href="/studenti/quest" class="cq-primary-btn">Começar missão <i class="fa-solid fa-arrow-right"></i></a>
+                <?php if (is_array($mission)): ?>
+                    <h2><?= $h($mission['title'] ?? 'Missão') ?></h2>
+                    <?php if (!empty($mission['chapter_title'])): ?><p><?= $h($mission['chapter_title']) ?></p><?php endif; ?>
+                    <div class="cq-rewards"><span class="cq-chip"><i class="fa-solid fa-compass"></i> Missão publicada</span></div>
+                    <a href="<?= $h($mission['url']) ?>" class="cq-primary-btn">Continuar missão <i class="fa-solid fa-arrow-right"></i></a>
+                <?php else: ?>
+                    <h2>Tudo em dia</h2>
+                    <p>Não há uma missão nova publicada para você neste momento.</p>
+                    <div class="cq-rewards"><span class="cq-chip"><i class="fa-solid fa-circle-check"></i> Volte quando uma nova missão for liberada</span></div>
+                <?php endif; ?>
             </section>
 
             <section class="cq-card cq-journey-preview">
-                <div class="cq-card-eyebrow" style="color:#ead39a">Continue sua Jornada</div>
-                <h3>Capítulo 1 — O Chamado</h3>
-                <p>Deus fala, revela-se e chama cada pessoa a responder com fé.</p>
-                <div class="cq-journey-line" aria-hidden="true">
-                    <span class="cq-node current">1</span><span class="cq-node">2</span><span class="cq-node">3</span><span class="cq-node">4</span><span class="cq-node">5</span>
-                </div>
-                <a href="/studenti/classe/dashboard?view=journey" class="cq-secondary-btn">Abrir mapa <i class="fa-solid fa-map"></i></a>
+                <div class="cq-card-eyebrow" style="color:#ead39a">Sua Jornada</div>
+                <?php if ($currentChapter): ?>
+                    <h3>Capítulo <?= (int)($currentChapter['number'] ?? 1) ?> — <?= $h($currentChapter['title'] ?? '') ?></h3>
+                    <p><?= $h($currentChapter['subtitle'] ?? '') ?></p>
+                    <div class="cq-map-progress" style="background:rgba(255,250,241,.08);border-color:rgba(255,255,255,.15);color:#fff">
+                        <div class="rowline" style="color:#e8dfcc"><span><?= (int)($journey['completedSteps'] ?? 0) ?> de <?= (int)($journey['totalSteps'] ?? 22) ?> etapas</span><strong><?= (int)($journey['progressPercent'] ?? 0) ?>%</strong></div>
+                        <div class="cq-progress"><span style="width:<?= max(0,min(100,(int)($journey['progressPercent'] ?? 0))) ?>%"></span></div>
+                    </div>
+                <?php else: ?>
+                    <h3>A Jornada está começando</h3><p>Seu progresso aparecerá aqui conforme você concluir as missões.</p>
+                <?php endif; ?>
+                <a href="/studenti/classe/dashboard?view=journey" class="cq-secondary-btn mt-3">Abrir mapa <i class="fa-solid fa-map"></i></a>
             </section>
         </div>
 
         <div class="cq-mini-grid">
             <section class="cq-card">
-                <div class="cq-card-head"><div class="cq-card-eyebrow"><i class="fa-solid fa-image-portrait me-1"></i> Carta em destaque</div></div>
-                <div class="cq-saint-art" aria-hidden="true"><i class="fa-solid fa-cross"></i></div>
-                <h3 class="mt-3">São Carlo Acutis</h3>
-                <p>Uma vida jovem marcada pela Eucaristia e pelo anúncio do Evangelho também no mundo digital.</p>
-                <a href="/studenti/classe/dashboard?view=album" class="cq-secondary-btn">Ver Álbum</a>
+                <div class="cq-card-head"><div class="cq-card-eyebrow"><i class="fa-solid fa-image-portrait me-1"></i> Seu Álbum</div></div>
+                <?php if (is_array($featuredCard)): ?>
+                    <div class="cq-saint-art" aria-hidden="true"><i class="fa-solid fa-cross"></i></div>
+                    <h3 class="mt-3"><?= $h($featuredCard['name'] ?? '') ?></h3>
+                    <p><?= $h($featuredCard['short_teaching'] ?: ($featuredCard['short_bio'] ?? '')) ?></p>
+                    <a href="/studenti/classe/dashboard?view=album" class="cq-secondary-btn">Abrir Álbum</a>
+                <?php else: ?>
+                    <div class="cq-saint-art" aria-hidden="true"><i class="fa-solid fa-images"></i></div>
+                    <h3 class="mt-3">Sua coleção começa aqui</h3>
+                    <p>Quando você conquistar sua primeira carta de santo, ela aparecerá nesta área.</p>
+                    <a href="/studenti/classe/dashboard?view=album" class="cq-secondary-btn">Ver Álbum</a>
+                <?php endif; ?>
             </section>
 
             <section class="cq-card">
                 <div class="cq-card-head"><div class="cq-card-eyebrow"><i class="fa-regular fa-calendar me-1"></i> Próximo encontro</div></div>
-                <div class="cq-meeting-date"><span>SÁB</span><strong>12</strong><span>SET</span></div>
-                <h3>Caminhando juntos</h3>
-                <p>Veja o tema do encontro, prepare-se durante a semana e leve suas perguntas.</p>
-                <div class="clearfix"></div>
-                <a href="/studenti/quest" class="cq-secondary-btn mt-2">Preparar-me</a>
+                <?php if (is_array($meeting) && $meetingDate): ?>
+                    <div class="cq-meeting-date"><span><?= $h($meetingDate['weekday']) ?></span><strong><?= $h($meetingDate['day']) ?></strong><span><?= $h($meetingDate['month']) ?></span></div>
+                    <h3><?= $h($meeting['title'] ?? 'Encontro da Crisma') ?></h3>
+                    <p><?= $h($meeting['theme'] ?: ('Às ' . $meetingDate['time'])) ?></p>
+                    <div class="clearfix"></div>
+                <?php else: ?>
+                    <div class="cq-meeting-date"><i class="fa-regular fa-calendar" style="font-size:24px"></i></div>
+                    <h3>Aguardando programação</h3>
+                    <p>O próximo encontro aparecerá aqui assim que for cadastrado pelos catequistas.</p>
+                    <div class="clearfix"></div>
+                <?php endif; ?>
             </section>
         </div>
+
+        <section class="cq-card mt-3">
+            <div class="cq-card-head"><div class="cq-card-eyebrow"><i class="fa-regular fa-envelope me-1"></i> Comunidade</div></div>
+            <h3>Correio da Jornada</h3>
+            <p>Envie um bilhete, presenteie uma carta repetida ou proponha uma troca para alguém da sua turma.</p>
+            <a href="/studenti/correio" class="cq-secondary-btn">Abrir Correio <i class="fa-solid fa-arrow-right"></i></a>
+        </section>
     <?php endif; ?>
 </div>
