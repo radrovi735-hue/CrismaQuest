@@ -4,6 +4,7 @@ $classroom = $classroom ?? null;
 $student = $student ?? null;
 $availableCharacters = $availableCharacters ?? [];
 $hero = $hero ?? null;
+$crismaquestStreak = $crismaquestStreak ?? ['current'=>0,'longest'=>0,'lastDate'=>null,'freezes'=>0];
 
 $displayName = is_array($hero) && !empty($hero['playerName'])
     ? (string) $hero['playerName']
@@ -14,6 +15,7 @@ $xpPercent = is_array($hero) ? max(0, min(100, (int) ($hero['xpPercent'] ?? 0)))
 $xpLabel = is_array($hero) ? (string) ($hero['xpLabel'] ?? '0 XP') : '0 XP';
 $coins = is_array($hero) ? (int) ($hero['coins'] ?? 0) : 0;
 $avatarSrc = is_array($hero) ? (string) ($hero['avatar']['src'] ?? '') : '';
+$streakDays = max(0, (int)($crismaquestStreak['current'] ?? 0));
 $levelNames = [1=>'Peregrino',2=>'Caminhante',3=>'Discípulo',4=>'Servidor',5=>'Mensageiro',6=>'Missionário',7=>'Testemunha',8=>'Enviado'];
 $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
 ?>
@@ -65,7 +67,7 @@ $levelTitle = $levelNames[min(8, max(1, $level))] ?? 'Peregrino';
             <div class="cq-stats">
                 <div class="cq-stat"><i class="fa-solid fa-star"></i><div><strong><?= htmlspecialchars($xpLabel) ?></strong><span>Experiência</span></div></div>
                 <div class="cq-stat"><i class="fa-solid fa-coins"></i><div><strong><?= $coins ?></strong><span>Lúmens</span></div></div>
-                <div class="cq-stat"><i class="fa-solid fa-fire-flame-curved"></i><div><strong>0 dias</strong><span>Chama</span></div></div>
+                <div class="cq-stat"><i class="fa-solid fa-fire-flame-curved"></i><div><strong><?= $streakDays ?> <?= $streakDays === 1 ? 'dia' : 'dias' ?></strong><span>Chama</span></div></div>
             </div>
 
             <div class="cq-level-row">
