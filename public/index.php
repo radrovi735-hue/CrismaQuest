@@ -14,7 +14,12 @@ if (!file_exists(__DIR__ . '/../.env')) {
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
-CrismaQuestBootstrapService::ensureInstalled();
+// Schema maintenance must never take the public app offline.
+try {
+    CrismaQuestBootstrapService::ensureInstalled();
+} catch (Throwable $e) {
+    error_log('[CrismaQuest bootstrap] ' . $e->getMessage());
+}
 
 session_start();
 
