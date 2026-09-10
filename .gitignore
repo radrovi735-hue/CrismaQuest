@@ -1,0 +1,8 @@
+.env
+/vendor/
+/var/*.lock
+/var/logs/
+/public/uploads/
+.DS_Store
+Thumbs.db
+*.log
