@@ -16,6 +16,7 @@ $nav = [
     ['/docenti/dashboard','fa-house','Painel'],
     ['/docenti/studenti','fa-users','Turma'],
     ['/docenti/quest','fa-compass','Missões'],
+    ['/docenti/jogo','fa-gamepad','Jogo'],
     ['/docenti/dashboard?view=attendance','fa-calendar-check','Presença'],
     ['/docenti/correio','fa-envelope-open-text','Correio'],
     ['/docenti/badge','fa-award','Conquistas'],
