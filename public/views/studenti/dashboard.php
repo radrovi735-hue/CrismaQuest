@@ -3,6 +3,7 @@
 use App\Service\PermissionService;
 use App\Service\TranslationService;
 
+// Production recovery marker: force this required view into the incremental deploy.
 $translator = new TranslationService();
 $permissionStatus = $permissionStatus ?? PermissionService::STATUS_NOT_LOGGED;
 $classes = $classes ?? [];
