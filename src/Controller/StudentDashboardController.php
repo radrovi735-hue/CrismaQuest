@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Core\View;
+use App\Service\CrismaQuestStreakService;
 use App\Service\Flash;
 use App\Service\PermissionService;
 use App\Service\Session;
@@ -47,6 +48,7 @@ class StudentDashboardController
         $service = new StudentDashboardService();
         $data = $service->getClassDashboardData();
         $this->guardClassPage($data);
+        $data['crismaquestStreak'] = (new CrismaQuestStreakService())->getStatus();
 
         $requestedView = (string) ($_GET['view'] ?? 'home');
         $view = match ($requestedView) {
