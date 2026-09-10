@@ -112,9 +112,17 @@ final class CrismaQuestStreakService
         $now = $this->now();
 
         for ($i=1; $i<=$maxDays; $i++) {
-            $date = $now->sub(new DateInterval('P'.$i.'D'))->format('Y-m-d');
+            $candidate = $now->sub(new DateInterval('P'.$i.'D'));
+            $date = $candidate->format('Y-m-d');
             if ($this->isPaused($userId, $date, $pdo)) continue;
-            if (!$this->isCovered($userId, $date, $pdo)) return $date;
+            if ($this->isCovered($userId, $date, $pdo)) continue;
+
+            // Não permite comprar/criar uma sequência que nunca existiu.
+            // O dia anterior ao buraco precisa ter sido efetivamente coberto.
+            $previous = $candidate->sub(new DateInterval('P1D'))->format('Y-m-d');
+            if ($this->isCovered($userId, $previous, $pdo) || $this->isPaused($userId, $previous, $pdo)) {
+                return $date;
+            }
         }
         return null;
     }
