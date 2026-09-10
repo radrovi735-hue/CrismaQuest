@@ -17,6 +17,7 @@ $nav = [
     ['/docenti/studenti','fa-users','Turma'],
     ['/docenti/quest','fa-compass','Missões'],
     ['/docenti/dashboard?view=attendance','fa-calendar-check','Presença'],
+    ['/docenti/correio','fa-envelope-open-text','Correio'],
     ['/docenti/badge','fa-award','Conquistas'],
     ['/docenti/profilo','fa-gear','Configurações'],
 ];
