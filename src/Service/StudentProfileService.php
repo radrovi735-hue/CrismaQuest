@@ -6,112 +6,52 @@ use PDO;
 
 class StudentProfileService
 {
-    private TranslationService $translator;
-
-    public function __construct()
-    {
-        $this->translator = new TranslationService();
-    }
-
     public function getCurrentUserProfile(): ?array
     {
         $userId = $this->getCurrentUserId();
-        if ($userId === null) {
-            return null;
-        }
+        if ($userId === null) return null;
 
         $stmt = Database::getConnection()->prepare(
-            'SELECT id_utente, nome, cognome, username, ricevi_mail, language
+            'SELECT id_utente, nome, cognome, username
              FROM ct_utenti
              WHERE id_utente = :id_utente
              LIMIT 1'
         );
-        $stmt->execute(['id_utente' => $userId]);
-
-        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$profile) {
-            return null;
-        }
-
-        $profile['language'] = $this->normalizeLanguage((string) ($profile['language'] ?? 'en'));
-
-        return $profile;
+        $stmt->execute(['id_utente'=>$userId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     public function updateCurrentUserProfile(array $payload): array
     {
         $userId = $this->getCurrentUserId();
-        if ($userId === null) {
-            return $this->error('permission.nologin');
-        }
+        if ($userId === null) return $this->error('Faça login novamente para alterar sua senha.');
 
-        $receiveMail = ((int) ($payload['receive_mail'] ?? 0)) === 1 ? 1 : 0;
-        $password = (string) ($payload['password'] ?? '');
-        $passwordConfirm = (string) ($payload['password_confirm'] ?? '');
-        $language = $this->normalizeLanguage((string) ($payload['language'] ?? 'en'));
+        $password = (string)($payload['password'] ?? '');
+        $passwordConfirm = (string)($payload['password_confirm'] ?? '');
+        if ($password === '') return $this->error('Informe a nova senha.');
+        if (strlen($password) < 8) return $this->error('A nova senha precisa ter pelo menos 8 caracteres.');
+        if ($password !== $passwordConfirm) return $this->error('As duas senhas não coincidem.');
 
-        if ($password !== '' && $password !== $passwordConfirm) {
-            return $this->error($this->t('profile.password.mismatch'));
-        }
+        $stmt = Database::getConnection()->prepare(
+            'UPDATE ct_utenti SET password=:password WHERE id_utente=:id_utente'
+        );
+        $stmt->execute([
+            'password'=>password_hash($password, PASSWORD_DEFAULT),
+            'id_utente'=>$userId,
+        ]);
 
-        $pdo = Database::getConnection();
-        $params = [
-            'id_utente' => $userId,
-            'ricevi_mail' => $receiveMail,
-            'language' => $language,
-        ];
-
-        if ($password !== '') {
-            $params['password'] = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare(
-                'UPDATE ct_utenti
-                 SET password = :password,
-                     ricevi_mail = :ricevi_mail,
-                     language = :language
-                 WHERE id_utente = :id_utente'
-            );
-        } else {
-            $stmt = $pdo->prepare(
-                'UPDATE ct_utenti
-                 SET ricevi_mail = :ricevi_mail,
-                     language = :language
-                 WHERE id_utente = :id_utente'
-            );
-        }
-
-        $stmt->execute($params);
-
-        Session::set('lang', $language);
-
-        return [
-            'success' => true,
-            'message' => $this->t('profile.save.success'),
-        ];
+        return ['success'=>true,'message'=>'Senha alterada com sucesso.'];
     }
 
     private function getCurrentUserId(): ?int
     {
         $user = Session::get('user');
-        $userId = isset($user['id']) ? (int) $user['id'] : 0;
-
+        $userId = isset($user['id']) ? (int)$user['id'] : 0;
         return $userId > 0 ? $userId : null;
-    }
-
-    private function normalizeLanguage(string $language): string
-    {
-        return in_array($language, ['en', 'it'], true) ? $language : 'en';
     }
 
     private function error(string $message): array
     {
-        return [
-            'success' => false,
-            'message' => $message,
-        ];
-    }
-
-    private function t(string $key): string
-    {
-        return $this->translator->translate($key);
+        return ['success'=>false,'message'=>$message];
     }
 }
