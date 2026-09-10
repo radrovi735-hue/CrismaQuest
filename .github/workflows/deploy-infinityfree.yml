@@ -42,20 +42,18 @@ jobs:
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "recovery=$recovery" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare safe upload-only package
+      - name: Prepare safe incremental package
         if: steps.mode.outputs.full != 'true'
         shell: bash
         run: |
           set -euo pipefail
           rm -rf deploy-fast
           mkdir -p deploy-fast
-
           if [[ "${{ steps.mode.outputs.recovery }}" == "true" ]]; then
             RANGE="${RECOVERY_BASE}..HEAD"
           else
             RANGE="HEAD^..HEAD"
           fi
-
           git diff --name-only --diff-filter=AM "$RANGE" | while IFS= read -r file; do
             case "$file" in
               .htaccess|public/*|src/*|routes/*|config/*|sql/*|translations/*)
@@ -66,8 +64,6 @@ jobs:
                 ;;
             esac
           done
-
-          # Critical runtime files are always refreshed during recovery.
           if [[ "${{ steps.mode.outputs.recovery }}" == "true" ]]; then
             for file in .htaccess public/.htaccess public/index.php public/views/studenti/dashboard.php; do
               if [[ -f "$file" ]]; then
@@ -76,9 +72,7 @@ jobs:
               fi
             done
           fi
-
           echo "Files to upload: $(find deploy-fast -type f | wc -l)"
-          find deploy-fast -type f -print | sort
 
       - name: Safe incremental upload
         if: steps.mode.outputs.full != 'true'
@@ -88,19 +82,15 @@ jobs:
           FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          count=0
           while IFS= read -r -d '' file; do
             rel="${file#deploy-fast/}"
-            echo "Uploading $rel"
             curl --silent --show-error --fail --ftp-create-dirs \
               --user "${FTP_USER}:${FTP_PASS}" \
               --upload-file "$file" \
               "ftp://ftpupload.net/htdocs/$rel"
-            count=$((count+1))
           done < <(find deploy-fast -type f -print0)
-          echo "Uploaded $count files without deleting remote files."
 
-      - name: Setup PHP for full deploy
+      - name: Setup PHP for full recovery
         if: steps.mode.outputs.full == 'true'
         uses: shivammathur/setup-php@v2
         with:
@@ -112,7 +102,7 @@ jobs:
         if: steps.mode.outputs.full == 'true'
         run: composer install --no-dev --classmap-authoritative --no-interaction --prefer-dist --no-progress
 
-      - name: Prepare full optimized package
+      - name: Prepare full optimized runtime
         if: steps.mode.outputs.full == 'true'
         shell: bash
         run: |
@@ -129,24 +119,25 @@ jobs:
           find deploy/public/assets/bootstrap-5.3.8/js -type f ! -name 'bootstrap.bundle.min.js' -delete 2>/dev/null || true
           find deploy/public/assets/bootstrap/css -type f ! -name 'bootstrap.min.css' -delete 2>/dev/null || true
           find deploy/public/assets/bootstrap/js -type f ! -name 'bootstrap.bundle.min.js' -delete 2>/dev/null || true
-          find deploy -type f \( -name '*.map' -o -name '.DS_Store' -o -name '*.md' \) -delete
-          echo "Full deploy files: $(find deploy -type f | wc -l)"
-          echo "Full package size: $(du -sh deploy | cut -f1)"
+          find deploy -type f \( -name '*.map' -o -name '.DS_Store' -o -name '*.md' -o -name 'cq-health-91f3.php' -o -name 'cq-route-7b3f.php' \) -delete
+          echo "Full runtime files: $(find deploy -type f | wc -l)"
+          echo "Full runtime size: $(du -sh deploy | cut -f1)"
 
-      - name: Full deploy to InfinityFree
+      - name: Safe full runtime upload
         if: steps.mode.outputs.full == 'true'
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-        with:
-          server: ftpupload.net
-          username: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
-          password: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          server-dir: htdocs/
-          local-dir: ./deploy/
-          state-name: .crismaquest-deploy-state.json
-          timeout: 300000
-          log-level: minimal
-          exclude: |
-            **/.env
-            **/.git*
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export FTP_USER FTP_PASS
+          find deploy -type f -print0 | xargs -0 -n1 -P6 bash -c '
+            file="$0"
+            rel="${file#deploy/}"
+            curl --silent --show-error --fail --retry 2 --retry-delay 1 --ftp-create-dirs \
+              --user "${FTP_USER}:${FTP_PASS}" \
+              --upload-file "$file" \
+              "ftp://ftpupload.net/htdocs/$rel"
+          '
+          echo "Safe full runtime recovery completed without deleting remote files."
