@@ -31,6 +31,7 @@ $navItems = [
     <link href="/css/crismaquest-theme.css" rel="stylesheet">
     <link href="/css/crismaquest-app.css" rel="stylesheet">
     <link href="/css/crismaquest-social.css" rel="stylesheet">
+    <link href="/css/crismaquest-graphics.css?v=20260910b" rel="stylesheet">
     <?php if (!empty($pageStyles ?? [])): ?>
         <?php foreach ($pageStyles as $style): ?>
             <link href="<?= htmlspecialchars($style) ?>" rel="stylesheet">
@@ -90,6 +91,7 @@ window.CQ = {
 };
 </script>
 <script src="/js/crismaquest-saint-avatars.js"></script>
+<script src="/js/crismaquest-graphics.js?v=20260910b"></script>
 <?php if (!empty($pageScripts ?? [])): ?>
     <?php foreach ($pageScripts as $script): ?>
         <script src="<?= htmlspecialchars($script) ?>"></script>
