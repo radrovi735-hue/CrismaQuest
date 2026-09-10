@@ -1,53 +1,50 @@
 <?php
 
 use App\Service\PermissionService;
-use App\Service\TranslationService;
-
 $permissionStatus = $permissionStatus ?? PermissionService::STATUS_NOT_LOGGED;
-$translator = new TranslationService();
 $classroom = $classroom ?? null;
 $quests = $quests ?? [];
 ?>
-<div class="container-fluid">
-    <?php if ($permissionStatus === PermissionService::STATUS_OK): ?>
-        <div class="class-header mb-4">
-            <div class="d-flex align-items-center gap-3">
-                <div class="class-icon">
-                    <i class="fa-solid <?= htmlspecialchars((string) ($classroom['icona'] ?? 'fa-school')) ?>"></i>
-                </div>
-                <h1 class="class-title">
-                    <?= $translator->translate('student.quest.class') ?> <?= htmlspecialchars((string) ($classroom['nome_classe'] ?? '')) ?> <?= htmlspecialchars((string) ($classroom['anno_scolastico'] ?? '')) ?>
-                </h1>
+<div class="cq-student-shell">
+<?php if ($permissionStatus === PermissionService::STATUS_OK): ?>
+    <section class="cq-card mb-3">
+        <div class="cq-card-eyebrow">Missões</div>
+        <h2>Descobrir, compreender e viver.</h2>
+        <p class="mb-0">Aqui ficam as missões da Jornada: Bíblia, catequese, santos, desafios, oração e Evangelho em ação.</p>
+    </section>
+
+    <?php if ($quests === []): ?>
+        <section class="cq-card">
+            <div class="cq-card-eyebrow">Nenhuma missão publicada</div>
+            <h3>A próxima etapa está sendo preparada.</h3>
+            <p>Quando o catequista publicar uma missão, ela aparecerá aqui. Enquanto isso, você pode explorar a Jornada e o Álbum dos Santos.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/studenti/classe/dashboard?view=journey" class="cq-primary-btn">Abrir Jornada</a>
+                <a href="/studenti/classe/dashboard?view=album" class="cq-secondary-btn">Ver Álbum</a>
             </div>
-        </div>
-
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h1 class="text-center mb-4" style="text-shadow: 0 0 20px #ffcc88;"><i class="fas fa-scroll"></i> <?= $translator->translate('student.quest.index.available') ?></h1>
-                <div class="row mb-4 justify-content-center">
-                    <div class="col-md-6 search-box">
-                        <input id="searchInput" type="text" class="form-control form-control-lg" placeholder="<?= htmlspecialchars($translator->translate('student.quest.index.search_placeholder')) ?>">
-                    </div>
-                </div>
-            </div>
-
-            <div id="questsContainer" class="row g-4 p-3">
-                <?php foreach ($quests as $quest): ?>
-                    <div class="col-md-4 quest-item" data-name="<?= htmlspecialchars((string) ($quest['nome_quest'] ?? '')) ?>">
-                        <div class="quest-card">
-                            <div class="portal" onclick="window.location.href='/studenti/quest/<?= (int) ($quest['id_quest'] ?? 0) ?>/piantina';"></div>
-
-                            <img class="quest-img" src="<?= htmlspecialchars((string) ($quest['image_quest'] ?? '')) ?>" alt="<?= htmlspecialchars(sprintf($translator->translate('student.quest.alt.quest'), (string) ($quest['nome_quest'] ?? ''))) ?>">
-
-                            <div class="quest-name"><?= htmlspecialchars((string) ($quest['nome_quest'] ?? '')) ?></div>
-
-                            <button class="access-btn" onclick="window.location.href='/studenti/quest/<?= (int) ($quest['id_quest'] ?? 0) ?>/piantina';">
-                                <i class="fa-solid fa-door-open"></i> <?= $translator->translate('student.quest.index.enter') ?>
-                            </button>
+        </section>
+    <?php else: ?>
+        <div class="row g-3">
+            <?php foreach ($quests as $index => $quest): ?>
+                <div class="col-12 col-md-6">
+                    <article class="cq-card h-100 cq-mission-card">
+                        <div class="cq-card-head">
+                            <div class="cq-card-eyebrow"><i class="fa-solid <?= $index % 3 === 0 ? 'fa-book-bible' : ($index % 3 === 1 ? 'fa-lightbulb' : 'fa-hands-helping') ?> me-1"></i> Missão da Jornada</div>
+                            <span class="cq-chip"><i class="fa-regular fa-clock"></i> 3–7 min</span>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+                        <?php if (!empty($quest['image_quest'])): ?>
+                            <div class="mb-3" style="height:120px;border-radius:16px;overflow:hidden;background:#0d3a4a">
+                                <img src="<?= htmlspecialchars((string)$quest['image_quest']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.82">
+                            </div>
+                        <?php endif; ?>
+                        <h3><?= htmlspecialchars((string)($quest['nome_quest'] ?? 'Missão')) ?></h3>
+                        <p>Entre nesta etapa para ver os capítulos e desafios disponíveis.</p>
+                        <div class="cq-rewards"><span class="cq-chip"><i class="fa-solid fa-star"></i> XP</span><span class="cq-chip"><i class="fa-solid fa-coins"></i> Lúmens</span><span class="cq-chip"><i class="fa-solid fa-fire-flame-curved"></i> Chama</span></div>
+                        <a class="cq-primary-btn" href="/studenti/quest/<?= (int)($quest['id_quest'] ?? 0) ?>/piantina">Entrar <i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                </div>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
+<?php endif; ?>
 </div>
