@@ -23,7 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf priority
-          mkdir -p priority/public/views/docenti/modals priority/public/views/docenti/studenti priority/public/views/layouts priority/public/js/docenti priority/src/Service priority/translations
+          mkdir -p priority/public/views/docenti/modals priority/public/views/docenti/studenti priority/public/views/studenti priority/public/views/layouts priority/public/js/docenti priority/src/Service priority/translations
           cp .htaccess priority/.htaccess
           cp public/.htaccess priority/public/.htaccess
           cp public/install.php priority/public/install.php
@@ -33,6 +33,7 @@ jobs:
           cp public/views/docenti/studenti/index.php priority/public/views/docenti/studenti/index.php
           cp public/views/docenti/modals/teacherClassCreateModal.php priority/public/views/docenti/modals/teacherClassCreateModal.php
           cp public/views/docenti/modals/studentManagementModals.php priority/public/views/docenti/modals/studentManagementModals.php
+          cp public/views/studenti/classDashboard.php priority/public/views/studenti/classDashboard.php
           cp public/js/docenti/studenti.js priority/public/js/docenti/studenti.js
           cp src/Service/CrismaQuestBootstrapService.php priority/src/Service/CrismaQuestBootstrapService.php
           cp src/Service/TeacherClassService.php priority/src/Service/TeacherClassService.php
