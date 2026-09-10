@@ -48,34 +48,20 @@ class StudentDashboardController
         $data = $service->getClassDashboardData();
         $this->guardClassPage($data);
 
-        View::render('studenti/classDashboard', array_merge($data, [
-            'title' => 'CrismaQuest',
-            'pageStyles' => ['/css/crismaquest-app.css'],
-            'useMathJax' => false,
-        ]), 'mainStudLayout');
-    }
+        $requestedView = (string) ($_GET['view'] ?? 'home');
+        $view = match ($requestedView) {
+            'journey' => 'studenti/journey',
+            'album' => 'studenti/album',
+            default => 'studenti/classDashboard',
+        };
+        $title = match ($requestedView) {
+            'journey' => 'Jornada',
+            'album' => 'Álbum dos Santos',
+            default => 'CrismaQuest',
+        };
 
-    public function showJourney(): void
-    {
-        $service = new StudentDashboardService();
-        $data = $service->getClassDashboardData();
-        $this->guardClassPage($data);
-
-        View::render('studenti/journey', array_merge($data, [
-            'title' => 'Jornada',
-            'pageStyles' => ['/css/crismaquest-app.css'],
-            'useMathJax' => false,
-        ]), 'mainStudLayout');
-    }
-
-    public function showAlbum(): void
-    {
-        $service = new StudentDashboardService();
-        $data = $service->getClassDashboardData();
-        $this->guardClassPage($data);
-
-        View::render('studenti/album', array_merge($data, [
-            'title' => 'Álbum dos Santos',
+        View::render($view, array_merge($data, [
+            'title' => $title,
             'pageStyles' => ['/css/crismaquest-app.css'],
             'useMathJax' => false,
         ]), 'mainStudLayout');
