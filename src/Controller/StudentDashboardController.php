@@ -8,157 +8,127 @@ use App\Service\PermissionService;
 use App\Service\Session;
 use App\Service\StudentDashboardService;
 
-// Controller dell'area studenti: selezione classe iniziale e dashboard interna della classe scelta.
 class StudentDashboardController
 {
-    // Mostra la pagina iniziale con l'elenco delle classi disponibili per lo studente autenticato.
     public function index(): void
     {
         $service = new StudentDashboardService();
         $data = $service->getSelectionPageData();
-
         $permissionStatus = $data['permissionStatus'] ?? PermissionService::STATUS_NOT_LOGGED;
-        if ($permissionStatus === PermissionService::STATUS_NOT_LOGGED) {
-            header('Location: /loginStud');
-            exit;
-        }
 
+        if ($permissionStatus === PermissionService::STATUS_NOT_LOGGED) {
+            header('Location: /loginStud'); exit;
+        }
         if ($permissionStatus === PermissionService::STATUS_NOT_STUDENT) {
             Flash::add('danger', 'permission.nostudent');
-            header('Location: /loginStud');
-            exit;
+            header('Location: /loginStud'); exit;
         }
 
         View::render('studenti/dashboard', array_merge($data, [
             'title' => 'student.dashboard.title',
-            // Nella pagina di selezione classe non serve caricare notifiche/topbar legate alla classe corrente.
             'disableStudentTopbarData' => true,
-            'pageStyles' => [
-                '/css/headers.css',
-                '/css/classes.css',
-            ],
+            'pageStyles' => ['/css/headers.css','/css/classes.css'],
             'useMathJax' => false,
         ]), 'mainStudLayout');
     }
 
-    // Salva in sessione la classe selezionata e reindirizza alla prima pagina interna della classe.
     public function selectClass(string $classId): void
     {
         $selected = (new StudentDashboardService())->selectClass((int) $classId);
-
         if (!$selected) {
             Flash::add('danger', 'student.classes.select.error');
-            header('Location: /studenti/dashboard');
-            exit;
+            header('Location: /studenti/dashboard'); exit;
         }
-
-        header('Location: /studenti/classe/dashboard');
-        exit;
+        header('Location: /studenti/classe/dashboard'); exit;
     }
 
-    // Mostra la dashboard interna della classe, riallineata alla pagina legacy del personaggio studente.
     public function showClassDashboard(): void
     {
         $service = new StudentDashboardService();
         $data = $service->getClassDashboardData();
-        $permissionStatus = $data['permissionStatus'] ?? PermissionService::STATUS_NOT_LOGGED;
-
-        if ($permissionStatus === PermissionService::STATUS_NOT_LOGGED) {
-            header('Location: /loginStud');
-            exit;
-        }
-
-        if ($permissionStatus === PermissionService::STATUS_NOT_STUDENT) {
-            Flash::add('danger', 'permission.nostudent');
-            header('Location: /loginStud');
-            exit;
-        }
-
-        if ($permissionStatus === PermissionService::STATUS_NO_CLASS) {
-            Flash::add('danger', 'permission.noclass');
-            header('Location: /studenti/dashboard');
-            exit;
-        }
-
-        if ($permissionStatus === PermissionService::STATUS_NOT_CLASS_OWNER) {
-            Session::set('class', null);
-            Flash::add('danger', 'permission.notyourclass');
-            header('Location: /studenti/dashboard');
-            exit;
-        }
+        $this->guardClassPage($data);
 
         View::render('studenti/classDashboard', array_merge($data, [
-            'title' => 'student.class.dashboard.title',
-            'pageStyles' => [
-                '/css/headers.css',
-                '/css/classes.css',
-                '/css/student-class-dashboard.css',
-            ],
+            'title' => 'CrismaQuest',
+            'pageStyles' => ['/css/crismaquest-app.css'],
             'useMathJax' => false,
         ]), 'mainStudLayout');
     }
 
-    // Mostra la pagina "I miei compagni" con tab compagni di classe e squadre avversarie.
+    public function showJourney(): void
+    {
+        $service = new StudentDashboardService();
+        $data = $service->getClassDashboardData();
+        $this->guardClassPage($data);
+
+        View::render('studenti/journey', array_merge($data, [
+            'title' => 'Jornada',
+            'pageStyles' => ['/css/crismaquest-app.css'],
+            'useMathJax' => false,
+        ]), 'mainStudLayout');
+    }
+
+    public function showAlbum(): void
+    {
+        $service = new StudentDashboardService();
+        $data = $service->getClassDashboardData();
+        $this->guardClassPage($data);
+
+        View::render('studenti/album', array_merge($data, [
+            'title' => 'Álbum dos Santos',
+            'pageStyles' => ['/css/crismaquest-app.css'],
+            'useMathJax' => false,
+        ]), 'mainStudLayout');
+    }
+
     public function showClassmates(): void
     {
         $service = new StudentDashboardService();
         $data = $service->getClassmatesPageData();
-        $permissionStatus = $data['permissionStatus'] ?? PermissionService::STATUS_NOT_LOGGED;
-
-        if ($permissionStatus === PermissionService::STATUS_NOT_LOGGED) {
-            header('Location: /loginStud');
-            exit;
-        }
-
-        if ($permissionStatus === PermissionService::STATUS_NOT_STUDENT) {
-            Flash::add('danger', 'permission.nostudent');
-            header('Location: /loginStud');
-            exit;
-        }
-
-        if ($permissionStatus === PermissionService::STATUS_NO_CLASS) {
-            Flash::add('danger', 'permission.noclass');
-            header('Location: /studenti/dashboard');
-            exit;
-        }
-
-        if ($permissionStatus === PermissionService::STATUS_NOT_CLASS_OWNER) {
-            Session::set('class', null);
-            Flash::add('danger', 'permission.notyourclass');
-            header('Location: /studenti/dashboard');
-            exit;
-        }
+        $this->guardClassPage($data);
 
         View::render('studenti/classmates', array_merge($data, [
             'title' => 'student.classmates.title',
-            'pageStyles' => [
-                '/css/headers.css',
-                '/css/classes.css',
-                '/css/classmates.css',
-            ],
+            'pageStyles' => ['/css/headers.css','/css/classes.css','/css/classmates.css'],
             'useMathJax' => false,
         ]), 'mainStudLayout');
     }
 
-    // Registra la scelta del personaggio quando lo studente non l'ha ancora selezionato.
     public function chooseCharacter(): void
     {
         $characterId = (int) ($_POST['character_id'] ?? 0);
         $chosen = $characterId > 0 && (new StudentDashboardService())->chooseCharacter($characterId);
-
         Flash::add($chosen ? 'success' : 'danger', $chosen
-            ? 'Personaggio selezionato correttamente.'
+            ? 'Personagem selecionado corretamente.'
             : 'student.dashboard.character.select.error');
-
-        header('Location: /studenti/classe/dashboard');
-        exit;
+        header('Location: /studenti/classe/dashboard'); exit;
     }
 
     public function activateTeamPower(): void
     {
         $result = (new StudentDashboardService())->activateTeamPower();
-        Flash::add(($result['success'] ?? false) ? 'success' : 'danger', $result['message'] ?? 'Operazione completata.');
-        header('Location: /studenti/classe/dashboard');
-        exit;
+        Flash::add(($result['success'] ?? false) ? 'success' : 'danger', $result['message'] ?? 'Operação concluída.');
+        header('Location: /studenti/classe/dashboard'); exit;
+    }
+
+    private function guardClassPage(array $data): void
+    {
+        $permissionStatus = $data['permissionStatus'] ?? PermissionService::STATUS_NOT_LOGGED;
+        if ($permissionStatus === PermissionService::STATUS_NOT_LOGGED) {
+            header('Location: /loginStud'); exit;
+        }
+        if ($permissionStatus === PermissionService::STATUS_NOT_STUDENT) {
+            Flash::add('danger', 'permission.nostudent');
+            header('Location: /loginStud'); exit;
+        }
+        if ($permissionStatus === PermissionService::STATUS_NO_CLASS) {
+            Flash::add('danger', 'permission.noclass');
+            header('Location: /studenti/dashboard'); exit;
+        }
+        if ($permissionStatus === PermissionService::STATUS_NOT_CLASS_OWNER) {
+            Session::set('class', null);
+            Flash::add('danger', 'permission.notyourclass');
+            header('Location: /studenti/dashboard'); exit;
+        }
     }
 }
