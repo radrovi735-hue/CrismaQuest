@@ -33,7 +33,7 @@ $flashes = Flash::all();
                 <div class="cq-field"><label class="cq-label" for="pass">Senha</label><input type="password" id="pass" name="pass" class="cq-input" placeholder="Sua senha" required autocomplete="current-password"></div>
                 <button class="cq-primary" type="submit">Entrar na jornada →</button>
             </form>
-            <div class="cq-help"><a href="#" onclick="return false;">Preciso de ajuda para entrar</a></div>
+            <div class="cq-help">Esqueceu a senha? Peça a um catequista para redefinir seu acesso.</div>
             <div class="cq-meta" aria-label="Como funciona o CrismaQuest">
                 <div class="cq-meta-card"><div class="cq-meta-icon">✦</div><small>XP mostra participação, não mede santidade.</small></div>
                 <div class="cq-meta-card"><div class="cq-meta-icon">🔥</div><small>Complete uma missão válida e mantenha sua Chama.</small></div>
