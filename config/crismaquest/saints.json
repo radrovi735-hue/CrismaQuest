@@ -52,15 +52,15 @@
     "source_url": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg",
     "credit": "Imagem fornecida pelo administrador do CrismaQuest",
     "license": "Uso autorizado no projeto CrismaQuest",
-    "license_url": "",
+    "license_url": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg",
     "short_teaching": "Paz, simplicidade e fraternidade.",
     "short_bio": "Escolheu uma vida de simplicidade, fraternidade e serviço, procurando reconhecer em toda a criação um chamado ao louvor.",
     "feast_date": "10-04",
     "image_path": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg",
-    "sha256": "",
+    "sha256": "e54a04c8b7877b21ef9ca5de4b7f2ca7a5c494f17ccb4988706fdf7ea6782fe5",
     "bytes": 56080,
     "fallback_image_path": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg",
-    "selection_policy": "imagem mais reconhecível e devocional; sem esculturas como imagem principal",
+    "selection_policy": "imagem fornecida e aprovada pelo administrador do CrismaQuest",
     "source_description": "Imagem fornecida pelo administrador do CrismaQuest."
   },
   {
@@ -203,13 +203,13 @@
     "source_url": "/assets/crismaquest/saints/sao-jose-user.jpg",
     "credit": "Imagem fornecida pelo administrador do CrismaQuest",
     "license": "Uso autorizado no projeto CrismaQuest",
-    "license_url": "",
+    "license_url": "/assets/crismaquest/saints/sao-jose-user.jpg",
     "source_description": "Imagem fornecida pelo administrador do CrismaQuest.",
     "image_path": "/assets/crismaquest/saints/sao-jose-user.jpg",
-    "sha256": "",
+    "sha256": "350d0d3f806678d46263a3d37b928613a0e5b4c66453d83e854c76e5615a41be",
     "bytes": 961985,
     "fallback_image_path": "/assets/crismaquest/saints/sao-jose-user.jpg",
-    "selection_policy": "imagem mais reconhecível e devocional; sem esculturas como imagem principal"
+    "selection_policy": "imagem fornecida e aprovada pelo administrador do CrismaQuest"
   },
   {
     "card_number": 11,
