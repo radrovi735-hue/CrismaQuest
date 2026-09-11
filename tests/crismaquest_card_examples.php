@@ -16,7 +16,7 @@ function assertCardExample(bool $condition, string $message): void
 $expected = [
     'santa-teresinha-menino-jesus' => 'Fotografia',
     'sao-francisco-assis' => 'Pintura',
-    'sao-pedro' => 'Ícone religioso',
+    'santo-inacio-antioquia' => 'Ícone religioso',
 ];
 
 $examples = array_filter(
@@ -31,13 +31,17 @@ assertCardExample(
 );
 
 foreach ($examples as $card) {
-    foreach (['name', 'image_kind', 'source_url', 'credit', 'license', 'license_url', 'image_path', 'sha256'] as $field) {
+    foreach (['name','image_kind','source_url','credit','license','license_url','image_path','fallback_image_path','sha256'] as $field) {
         assertCardExample(!empty($card[$field]), $card['name'] . ': ' . $field . ' registrado');
     }
 
-    $image = dirname(__DIR__) . '/public' . $card['image_path'];
-    assertCardExample(is_file($image), $card['name'] . ': imagem local disponível');
-    assertCardExample(hash_file('sha256', $image) === $card['sha256'], $card['name'] . ': obra original íntegra');
+    assertCardExample(
+        str_starts_with((string)$card['image_path'], 'https://commons.wikimedia.org/wiki/Special:Redirect/file/'),
+        $card['name'] . ': obra canônica usada na carta'
+    );
+    $fallback = dirname(__DIR__) . '/public' . $card['fallback_image_path'];
+    assertCardExample(is_file($fallback), $card['name'] . ': fallback local disponível');
+    assertCardExample(hash_file('sha256', $fallback) === $card['sha256'], $card['name'] . ': fallback local íntegro');
 }
 
-echo "PASS: três cartas reais prontas para a prévia do catequista\n";
+echo "PASS: fotografia, pintura e ícone canônicos prontos para a prévia\n";
