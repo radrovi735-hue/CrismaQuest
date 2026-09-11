@@ -89,8 +89,8 @@ jobs:
           BADGES=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_badge_catalog WHERE active=1;")
           CHESTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_chest_catalog WHERE active=1;")
           test "$TABLES" -ge 29
-          test "$SAINTS" -eq 20
-          test "$EDITIONS" -eq 20
+          test "$SAINTS" -eq 40
+          test "$EDITIONS" -eq 40
           test "$GIFTS" -ge 17
           test "$STEPS" -eq 22
           test "$MISSIONS" -eq 56
@@ -108,7 +108,7 @@ jobs:
           GIFTS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_gift_catalog WHERE active=1;")
           MISSIONS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_missions WHERE active=1;")
           SPARKS=$(mysql --protocol=tcp -h 127.0.0.1 -P 3306 -uroot -proot -Nse "SELECT COUNT(*) FROM crismaquest_ci.cq_daily_sparks WHERE active=1;")
-          test "$SAINTS" -eq 20
+          test "$SAINTS" -eq 40
           test "$GIFTS" -ge 17
           test "$MISSIONS" -eq 56
           test "$SPARKS" -eq 60
