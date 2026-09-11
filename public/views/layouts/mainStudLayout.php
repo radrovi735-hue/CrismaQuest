@@ -89,7 +89,7 @@ window.CQ = {
     i18n: <?= json_encode($translator->all(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>
 };
 </script>
-<script src="/js/crismaquest-saint-avatars.js"></script>
+<script src="/js/crismaquest-saint-avatars.js?v=20260911-avatar23"></script>
 <?php if (!empty($pageScripts ?? [])): ?>
     <?php foreach ($pageScripts as $script): ?>
         <script src="<?= htmlspecialchars($script) ?>"></script>
