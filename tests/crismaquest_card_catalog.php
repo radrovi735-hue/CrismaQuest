@@ -29,13 +29,14 @@ foreach ($cards as $card) {
     assertCardCatalog(
         str_starts_with($imagePath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
         || str_starts_with($imagePath, 'https://www.vaticannews.va/')
-        || (($card['slug'] ?? '') === 'sao-carlo-acutis' && str_starts_with($imagePath, 'data:image/webp;base64,')),
-        $card['name'] . ': imagem principal usa fonte canônica, oficial ou retrato aprovado'
+        || str_starts_with($imagePath, '/assets/crismaquest/saints/'),
+        $card['name'] . ': imagem principal usa fonte canônica, oficial ou arquivo aprovado'
     );
     assertCardCatalog(
         str_starts_with($sourceUrl, 'https://commons.wikimedia.org/wiki/File:')
-        || str_starts_with($sourceUrl, 'https://www.vaticannews.va/'),
-        $card['name'] . ': página de origem registrada'
+        || str_starts_with($sourceUrl, 'https://www.vaticannews.va/')
+        || str_starts_with($sourceUrl, '/assets/crismaquest/saints/'),
+        $card['name'] . ': origem registrada'
     );
     assertCardCatalog(
         mb_stripos((string)$card['image_kind'], 'escultura') === false,
@@ -62,9 +63,20 @@ $staleCarlo = CrismaQuestSaintCatalog::enrich([
     'quantity'=>1,
 ]);
 assertCardCatalog(
-    str_starts_with((string)$staleCarlo['image_path'], 'data:image/webp;base64,'),
-    'aluno com registro antigo recebe o retrato vertical novo'
+    (string)$staleCarlo['image_path'] === '/assets/crismaquest/saints/sao-carlo-acutis-user.jpg',
+    'aluno com registro antigo recebe a imagem aprovada do Carlo'
 );
 assertCardCatalog((int)$staleCarlo['quantity'] === 1, 'enriquecimento preserva dados do aluno');
 
-echo "PASS: 40 cartas com imagem canônica reconhecível e Carlo vertical para todos os alunos\n";
+$approved = [
+    'sao-francisco-assis'=>'/assets/crismaquest/saints/sao-francisco-assis-user.jpg',
+    'sao-carlo-acutis'=>'/assets/crismaquest/saints/sao-carlo-acutis-user.jpg',
+    'sao-jeronimo'=>'/assets/crismaquest/saints/sao-jeronimo-user.jpg',
+    'sao-jose'=>'/assets/crismaquest/saints/sao-jose-user.jpg',
+];
+foreach ($approved as $slug=>$path) {
+    $card = array_values(array_filter($cards, static fn(array $item): bool => $item['slug'] === $slug))[0] ?? null;
+    assertCardCatalog($card !== null && $card['image_path'] === $path, $slug . ': usa exatamente o arquivo aprovado');
+}
+
+echo "PASS: 40 cartas válidas e quatro imagens aprovadas fixadas para todos os alunos\n";
