@@ -154,6 +154,14 @@ class CrismaQuestBootstrapService
         try {
             $knownNames = [];
             foreach (array_merge($legacy, $extras) as $saint) $knownNames[] = $saint[0];
+            // Nomes usados em versões anteriores: reconheça-os para migrar a linha existente,
+            // em vez de criar um segundo avatar para o mesmo santo.
+            $knownNames = array_merge($knownNames, [
+                "Santa Joana d'Arc",
+                'Santa Clara',
+                'Santo Antônio',
+                'Beato Pier Giorgio Frassati',
+            ]);
 
             $classes = $pdo->query('SELECT id_classe FROM ct_classi WHERE eliminata = 0 ORDER BY id_classe')->fetchAll(PDO::FETCH_COLUMN) ?: [];
             $update = $pdo->prepare(
