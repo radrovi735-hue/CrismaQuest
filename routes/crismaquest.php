@@ -33,6 +33,7 @@ $router->post('/studenti/chama/rosario', [CrismaQuestGameController::class, 'use
 $router->get('/docenti/jogo', [CrismaQuestGameController::class, 'teacherIndex']);
 $router->get('/docenti/jogo/previa', [CrismaQuestGameController::class, 'teacherPreview']);
 $router->get('/docenti/jogo/jornada', [CrismaQuestGameController::class, 'teacherJourney']);
+$router->get('/docenti/jogo/visual', [CrismaQuestGameController::class, 'teacherVisualPreview']);
 $router->post('/docenti/jogo/missao/{id}/toggle', [CrismaQuestGameController::class, 'toggleMission']);
 $router->post('/docenti/jogo/missao/{id}/duplicar', [CrismaQuestGameController::class, 'duplicateMission']);
 $router->post('/docenti/jogo/missao/nova', [CrismaQuestGameController::class, 'createMission']);

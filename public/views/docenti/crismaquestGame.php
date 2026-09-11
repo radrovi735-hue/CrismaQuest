@@ -2,7 +2,7 @@
 $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <div class="cq-teacher-panel">
-  <nav class="cq-game-section-head"><a href="/docenti/jogo/previa">Ver como crismando →</a><a href="/docenti/jogo/jornada">Ver Jornada →</a></nav>
+  <nav class="cq-game-section-head"><a href="/docenti/jogo/previa">Ver como crismando →</a><a href="/docenti/jogo/visual">Prévia do Álbum →</a><a href="/docenti/jogo/jornada">Ver Jornada →</a></nav>
   <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
     <div>
       <div class="cq-game-kicker">Motor da temporada</div>

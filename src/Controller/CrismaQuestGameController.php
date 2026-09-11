@@ -119,6 +119,18 @@ final class CrismaQuestGameController
         ], 'mainDocLayout');
     }
 
+    public function teacherVisualPreview(): void
+    {
+        $frame = ($_GET['frame'] ?? '') === '1';
+        View::render('docenti/crismaquestVisualPreview', [
+            'cards'=>\App\Service\CrismaQuestSaintCatalog::all(),
+            'phone'=>!$frame && ($_GET['phone'] ?? '') === '1',
+            'embedded'=>$frame,
+            'pageStyles'=>['/css/crismaquest-app.css','/css/crismaquest-collection.css?v=20260911a'],
+            'useMathJax'=>false,
+        ], $frame ? 'crismaquestVisualPreviewLayout' : 'mainDocLayout');
+    }
+
     public function toggleMission(string $id): void
     {
         $result = (new CrismaQuestGameService())->toggleMission((int)$id);
