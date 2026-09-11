@@ -28,7 +28,7 @@ for ($step=1; $step<=10; $step++) {
 $setup->runStep(11);
 check($setup->status()['ready'] && CrismaQuestGameAccess::enabled(), 'instalação completa validada e ativada');
 $counts = $setup->status()['counts'];
-check($counts === ['steps'=>22,'missions'=>56,'sparks'=>60,'levels'=>8,'badges'=>14,'chests'=>9], 'catálogos completos');
+check($counts === ['steps'=>22,'missions'=>56,'sparks'=>60,'levels'=>8,'badges'=>14,'chests'=>9,'saints'=>40,'normalEditions'=>40], 'catálogos completos');
 $original = $pdo->query("SELECT title FROM cq_missions WHERE slug='c1e1-palavra'")->fetchColumn();
 $pdo->exec("UPDATE cq_missions SET title='Correção do catequista',active=0 WHERE slug='c1e1-palavra'");
 $setup->runStep(7);
