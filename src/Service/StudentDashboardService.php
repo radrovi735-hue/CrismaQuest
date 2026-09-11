@@ -618,7 +618,9 @@ class StudentDashboardService
                 $nextMin = (int)$nextMinRaw;
                 $span = max(1, $nextMin - $currentMin);
                 $xpPercent = (int)floor((max(0, min($span, $xpCurrent - $currentMin)) / $span) * 100);
-                $xpLabel = $xpCurrent . ' / ' . $nextMin . ' XP';
+                // A barra mede o avanço até o próximo nível; o rótulo mostra XP acumulado.
+                // Evita que o marco inicial de 120 XP pareça ser o teto total da jornada.
+                $xpLabel = $xpCurrent . ' XP';
             }
         } catch (\Throwable) {
             // Fallback seguro: mostra o XP acumulado mesmo antes da migração de gameplay.
