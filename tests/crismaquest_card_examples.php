@@ -36,8 +36,9 @@ foreach ($examples as $card) {
     }
 
     assertCardExample(
-        str_starts_with((string)$card['image_path'], 'https://commons.wikimedia.org/wiki/Special:Redirect/file/'),
-        $card['name'] . ': obra canônica usada na carta'
+        str_starts_with((string)$card['image_path'], 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
+        || str_starts_with((string)$card['image_path'], '/assets/crismaquest/saints/'),
+        $card['name'] . ': obra aprovada usada na carta'
     );
     $fallback = dirname(__DIR__) . '/public' . $card['fallback_image_path'];
     assertCardExample(is_file($fallback), $card['name'] . ': fallback local disponível');
