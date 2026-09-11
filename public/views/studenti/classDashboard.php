@@ -19,8 +19,8 @@ $saintIcon = static function (string $name): string {
         'São Francisco de Assis'=>'fa-dove','São Pedro'=>'fa-key','Santa Faustina Kowalska'=>'fa-heart','São João Paulo II'=>'fa-globe',
         'Santa Gianna Beretta Molla'=>'fa-hand-holding-heart','Santo Agostinho'=>'fa-book-open','Santa Mônica'=>'fa-hands-praying',
         'São José'=>'fa-hammer','São Vicente de Paulo'=>'fa-hands-holding-child','São Sebastião'=>'fa-shield-heart','São Paulo'=>'fa-scroll',
-        'Santa Clara'=>'fa-sun','Santa Catarina de Sena'=>'fa-book-bible','São João Bosco'=>'fa-people-group','Santa Teresa de Calcutá'=>'fa-hand-holding-heart',
-        'Santo Antônio'=>'fa-book-open','São Domingos Sávio'=>'fa-star','Beato Pier Giorgio Frassati'=>'fa-mountain','São João Evangelista'=>'fa-feather',
+        'Santa Clara de Assis'=>'fa-sun','Santa Catarina de Sena'=>'fa-book-bible','São João Bosco'=>'fa-people-group','Santa Teresa de Calcutá'=>'fa-hand-holding-heart',
+        'Santo Antônio de Pádua'=>'fa-book-open','São Domingos Sávio'=>'fa-star','São Pier Giorgio Frassati'=>'fa-mountain','São João Evangelista'=>'fa-feather',
         'Santo André'=>'fa-xmark'
     ];
     return $icons[$name] ?? 'fa-cross';
