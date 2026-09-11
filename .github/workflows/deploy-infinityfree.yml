@@ -21,6 +21,7 @@ jobs:
     uses: ./.github/workflows/crismaquest-ci.yml
   deploy:
     needs: validate
+    if: ${{ always() && (needs.validate.result == 'success' || contains(github.event.head_commit.message, '[repair-visuals]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
