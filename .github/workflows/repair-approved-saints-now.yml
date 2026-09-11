@@ -136,21 +136,33 @@ jobs:
           print("José bytes:", len(jose_bytes))
           PY
 
-      - name: Upload only corrected assets to production
+      - name: Upload all saint avatars to production
         shell: bash
         env:
           FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
           FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          for file in public/assets/crismaquest/saints/*; do
-            [ -f "$file" ] || continue
-            echo "Uploading $file"
+
+          upload_replace() {
+            local file="$1"
+            local rel="$file"
+            local temporary="${rel}.cq-${GITHUB_SHA}"
+            local encoded
+            encoded=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$temporary")
+            echo "Uploading $rel"
             curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs \
               --user "${FTP_USER}:${FTP_PASS}" \
               --upload-file "$file" \
-              "ftp://ftpupload.net/htdocs/$file"
-          done
+              --quote "-RNFR ${temporary##*/}" \
+              --quote "-RNTO ${rel##*/}" \
+              "ftp://ftpupload.net/htdocs/$encoded"
+          }
+
+          while IFS= read -r -d '' file; do
+            upload_replace "$file"
+          done < <(find public/assets/crismaquest/saints -maxdepth 1 -type f -print0)
+
           for file in \
             config/crismaquest/saints.json \
             public/js/crismaquest-saint-avatars.js \
@@ -159,11 +171,7 @@ jobs:
             public/views/layouts/mainStudLayout.php \
             src/Service/StudentDashboardService.php
           do
-            echo "Uploading $file"
-            curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs \
-              --user "${FTP_USER}:${FTP_PASS}" \
-              --upload-file "$file" \
-              "ftp://ftpupload.net/htdocs/$file"
+            upload_replace "$file"
           done
 
       - name: Persist approved images in repository
