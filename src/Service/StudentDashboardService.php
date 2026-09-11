@@ -497,7 +497,17 @@ class StudentDashboardService
         );
         $stmt->execute(['id_classe' => $classId]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        // O seed legado pode conter mais de uma linha apontando para o mesmo santo.
+        // Preserve os IDs para quem já escolheu um avatar, mas mostre apenas uma
+        // opção de cada santo na tela de escolha.
+        $unique = [];
+        foreach ($rows as $row) {
+            $name = trim((string)($row['nome_personaggio'] ?? ''));
+            if ($name === '' || isset($unique[$name])) continue;
+            $unique[$name] = $row;
+        }
+        return array_values($unique);
     }
 
     // Recupera il personaggio selezionato dallo studente.
