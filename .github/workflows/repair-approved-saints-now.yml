@@ -143,7 +143,7 @@ jobs:
           FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          for file in             public/assets/crismaquest/saints/sao-francisco-assis-user.jpg             public/assets/crismaquest/saints/sao-jose-user.jpg             config/crismaquest/saints.json             public/js/crismaquest-saint-avatars.js             src/Service/CrismaQuestBootstrapService.php             public/views/studenti/classDashboard.php
+          for file in             public/assets/crismaquest/saints/sao-francisco-assis-user.jpg             public/assets/crismaquest/saints/sao-jose-user.jpg             config/crismaquest/saints.json             public/js/crismaquest-saint-avatars.js             src/Service/CrismaQuestBootstrapService.php             public/views/studenti/classDashboard.php             src/Service/StudentDashboardService.php
           do
             echo "Uploading $file"
             curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs               --user "${FTP_USER}:${FTP_PASS}"               --upload-file "$file"               "ftp://ftpupload.net/htdocs/$file"
