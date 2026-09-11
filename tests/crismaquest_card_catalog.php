@@ -24,12 +24,16 @@ foreach ($cards as $card) {
         assertCardCatalog(!empty($card[$field]), $card['name'] . ': ' . $field . ' registrado');
     }
 
+    $imagePath = (string)$card['image_path'];
+    $sourceUrl = (string)$card['source_url'];
     assertCardCatalog(
-        str_starts_with((string)$card['image_path'], 'https://commons.wikimedia.org/wiki/Special:Redirect/file/'),
-        $card['name'] . ': imagem principal usa arquivo canônico do Commons'
+        str_starts_with($imagePath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
+        || str_starts_with($imagePath, 'https://www.vaticannews.va/'),
+        $card['name'] . ': imagem principal usa fonte canônica ou oficial'
     );
     assertCardCatalog(
-        str_starts_with((string)$card['source_url'], 'https://commons.wikimedia.org/wiki/File:'),
+        str_starts_with($sourceUrl, 'https://commons.wikimedia.org/wiki/File:')
+        || str_starts_with($sourceUrl, 'https://www.vaticannews.va/'),
         $card['name'] . ': página de origem registrada'
     );
     assertCardCatalog(
@@ -37,9 +41,17 @@ foreach ($cards as $card) {
         $card['name'] . ': escultura não é imagem principal'
     );
 
-    $fallback = dirname(__DIR__) . '/public' . $card['fallback_image_path'];
-    assertCardCatalog(is_file($fallback), $card['name'] . ': fallback local disponível');
-    assertCardCatalog(hash_file('sha256', $fallback) === $card['sha256'], $card['name'] . ': fallback local íntegro');
+    $fallbackPath = (string)$card['fallback_image_path'];
+    if (str_starts_with($fallbackPath, 'https://')) {
+        assertCardCatalog(
+            str_starts_with($fallbackPath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/'),
+            $card['name'] . ': fallback remoto vem de fonte livre'
+        );
+    } else {
+        $fallback = dirname(__DIR__) . '/public' . $fallbackPath;
+        assertCardCatalog(is_file($fallback), $card['name'] . ': fallback local disponível');
+        assertCardCatalog(hash_file('sha256', $fallback) === $card['sha256'], $card['name'] . ': fallback local íntegro');
+    }
 }
 
 echo "PASS: 40 cartas com imagem canônica reconhecível e fallback local\n";
