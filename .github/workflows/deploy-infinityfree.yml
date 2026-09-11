@@ -14,7 +14,7 @@ on:
 
 concurrency:
   group: crismaquest-infinityfree-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   repair_visuals_now:
