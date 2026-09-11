@@ -157,30 +157,60 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
 
   <section class="cq-game-card" id="baus">
     <div class="cq-game-section-head">
-      <div><div class="cq-game-kicker">Marcos de XP</div><h2>Baús disponíveis</h2></div>
+      <div><div class="cq-game-kicker">Marcos de XP</div><h2>Baús da Jornada</h2></div>
+      <span class="cq-progress-chip"><?= (int)($xp ?? 0) ?> XP atuais</span>
     </div>
-    <?php if (($chests ?? []) === []): ?>
-      <p class="cq-muted">Nenhum baú novo disponível agora. Continue as missões para alcançar o próximo marco.</p>
-    <?php else: ?>
-      <div class="cq-chest-grid">
-      <?php foreach ($chests as $chest): ?>
-        <div class="cq-chest">
-          <i class="fa-solid fa-box-open"></i>
-          <div><strong><?= $h($chest['name']) ?></strong><p><?= $h($chest['description'] ?? '') ?></p><small>liberado em <?= (int)$chest['threshold_xp'] ?> XP</small></div>
-          <form method="post" action="/studenti/baus/<?= (int)$chest['id'] ?>/abrir">
-          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>"><button type="submit">Abrir</button></form>
+    <div class="cq-chest-grid">
+    <?php foreach (($chests ?? []) as $chest):
+      $chestState = (string)($chest['chest_state'] ?? 'locked');
+      $missingXp = max(0, (int)$chest['threshold_xp'] - (int)($xp ?? 0));
+    ?>
+      <article class="cq-chest is-<?= $h($chestState) ?>">
+        <i class="fa-solid <?= $chestState === 'claimed' ? 'fa-circle-check' : ($chestState === 'available' ? 'fa-box-open' : 'fa-lock') ?>"></i>
+        <div>
+          <div class="cq-reward-state"><?= $chestState === 'claimed' ? 'Aberto' : ($chestState === 'available' ? 'Disponível' : 'Bloqueado') ?></div>
+          <strong><?= $h($chest['name']) ?></strong>
+          <p><?= $h($chest['description'] ?? '') ?></p>
+          <div class="cq-chest-rewards">
+            <?php if ((int)($chest['reward_lumens'] ?? 0) > 0): ?><span><i class="fa-solid fa-sun"></i> <?= (int)$chest['reward_lumens'] ?> L</span><?php endif; ?>
+            <?php if ((int)($chest['card_count'] ?? 0) > 0): ?><span><i class="fa-solid fa-images"></i> <?= (int)$chest['card_count'] ?> carta<?= (int)$chest['card_count']===1?'':'s' ?></span><?php endif; ?>
+            <?php if (!empty($chest['cosmetic_slug'])): ?><span><i class="fa-solid fa-wand-magic-sparkles"></i> visual</span><?php endif; ?>
+            <?php if (($chest['slug'] ?? '') === 'servico'): ?><span><i class="fa-solid fa-shield-heart"></i> escudo</span><?php endif; ?>
+          </div>
+          <small><?= (int)$chest['threshold_xp'] ?> XP</small>
         </div>
-      <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
+        <?php if ($chestState === 'available'): ?>
+          <form method="post" action="/studenti/baus/<?= (int)$chest['id'] ?>/abrir">
+            <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
+            <button type="submit">Abrir baú</button>
+          </form>
+        <?php elseif ($chestState === 'claimed'): ?>
+          <div class="cq-chest-status"><i class="fa-solid fa-check"></i> Recompensa resgatada</div>
+        <?php else: ?>
+          <div class="cq-chest-status">Faltam <?= $missingXp ?> XP</div>
+        <?php endif; ?>
+      </article>
+    <?php endforeach; ?>
+    </div>
   </section>
 
   <section class="cq-game-card">
-    <div class="cq-game-section-head"><div><div class="cq-game-kicker">Sua história</div><h2>Conquistas</h2></div></div>
-    <?php if (($badges ?? []) === []): ?><p class="cq-muted">Sua primeira conquista aparece quando você concluir uma missão.</p>
-    <?php else: ?><div class="cq-badge-grid">
-      <?php foreach ($badges as $badge): ?><div class="cq-badge"><i class="fa-solid <?= $h($badge['icon']) ?>"></i><strong><?= $h($badge['name']) ?></strong><span><?= $h($badge['description']) ?></span></div><?php endforeach; ?>
-    </div><?php endif; ?>
+    <div class="cq-game-section-head">
+      <div><div class="cq-game-kicker">Sua história</div><h2>Conquistas</h2></div>
+      <span class="cq-progress-chip"><?= count(array_filter($badges ?? [], static fn($badge) => !empty($badge['earned_at']))) ?>/<?= count($badges ?? []) ?> conquistadas</span>
+    </div>
+    <div class="cq-badge-grid">
+      <?php foreach (($badges ?? []) as $badge):
+        $earned = !empty($badge['earned_at']);
+      ?>
+        <article class="cq-badge <?= $earned ? 'is-earned' : 'is-locked' ?>">
+          <i class="fa-solid <?= $earned ? $h($badge['icon']) : 'fa-lock' ?>"></i>
+          <strong><?= $h($badge['name']) ?></strong>
+          <span><?= $h($badge['description']) ?></span>
+          <small><?= $earned ? 'Conquistada' : 'Ainda não conquistada' ?></small>
+        </article>
+      <?php endforeach; ?>
+    </div>
   </section>
 </div>
 <?php if (!empty($preview)): ?></fieldset><?php endif; ?>
