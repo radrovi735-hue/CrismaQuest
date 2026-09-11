@@ -85,7 +85,7 @@ final class CrismaQuestHomeService
 
         try {
             $stmt = Database::getConnection()->prepare(
-                'SELECT sc.name, sc.short_bio, sc.short_teaching, sc.image_path,
+                'SELECT sc.slug, sc.name, sc.short_bio, sc.short_teaching, sc.image_path,
                         ce.edition_type, uc.quantity
                  FROM cq_user_cards uc
                  JOIN cq_card_editions ce ON ce.id = uc.card_edition_id
@@ -96,7 +96,8 @@ final class CrismaQuestHomeService
                  LIMIT 1'
             );
             $stmt->execute(['user' => $userId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ? CrismaQuestSaintCatalog::enrich($row) : null;
         } catch (Throwable) {
             return null;
         }

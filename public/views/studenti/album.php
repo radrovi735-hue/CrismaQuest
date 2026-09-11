@@ -14,6 +14,7 @@ foreach ($cards as $candidate) {
         'bio'=>(string)$candidate['short_bio'],
         'teaching'=>(string)($candidate['short_teaching'] ?? ''),
         'image'=>(string)($candidate['image_path'] ?? ''),
+        'fallback'=>(string)($candidate['fallback_image_path'] ?? ''),
         'state'=>(string)($candidate['collection_state'] ?? 'locked'),
         'normalQuantity'=>(int)($candidate['quantity'] ?? 0),
         'illuminatedQuantity'=>(int)($candidate['illuminated_quantity'] ?? 0),
@@ -65,7 +66,7 @@ foreach ($cards as $candidate) {
 
     <?php if ($firstOwned): ?>
     <section class="cq-album-detail" id="cqSaintDetail" aria-live="polite">
-      <div class="cq-album-detail-art"><img id="cqDetailImage" src="<?= $h($firstOwned['image_path'] ?? '') ?>" alt="<?= $h($firstOwned['name']) ?>"></div>
+      <div class="cq-album-detail-art"><img id="cqDetailImage" src="<?= $h($firstOwned['image_path'] ?? '') ?>" alt="<?= $h($firstOwned['name']) ?>" referrerpolicy="no-referrer"<?= !empty($firstOwned['fallback_image_path']) ? ' data-fallback="'.$h($firstOwned['fallback_image_path']).'" onerror="if(this.dataset.fallback){this.onerror=null;this.src=this.dataset.fallback;}"' : '' ?>></div>
       <div class="cq-album-detail-copy">
         <div class="cq-collection-eyebrow" id="cqDetailCategory"><?= $h($firstOwned['category']) ?> · Carta <?= str_pad((string)$firstOwned['card_number'],2,'0',STR_PAD_LEFT) ?></div>
         <h2 id="cqDetailName"><?= $h($firstOwned['name']) ?></h2>
@@ -124,8 +125,11 @@ foreach ($cards as $candidate) {
   document.querySelectorAll('[data-open-saint]').forEach(button => button.addEventListener('click', () => {
     const card = cards[button.dataset.openSaint || ''];
     if (!card || !detail) return;
-    document.getElementById('cqDetailImage').src = card.image;
-    document.getElementById('cqDetailImage').alt = card.name;
+    const detailImage = document.getElementById('cqDetailImage');
+    detailImage.onerror = card.fallback ? function(){ this.onerror=null; this.src=card.fallback; } : null;
+    detailImage.dataset.fallback = card.fallback || '';
+    detailImage.src = card.image;
+    detailImage.alt = card.name;
     document.getElementById('cqDetailCategory').textContent = card.category + ' · Carta ' + String(card.number).padStart(2,'0');
     document.getElementById('cqDetailName').textContent = card.name;
     document.getElementById('cqDetailBio').textContent = card.bio;

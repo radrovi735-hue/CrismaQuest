@@ -9,6 +9,7 @@ $cqLit = $cqState === 'illuminated' || ($card['display_edition'] ?? 'normal') ==
 $cqQuantity = $cqLit ? $cqIlluminatedQuantity : $cqNormalQuantity;
 $cqNumber = str_pad((string)($card['card_number'] ?? 0), 2, '0', STR_PAD_LEFT);
 $cqImage = $card['image_path'] ?? $card['image_url'] ?? '';
+$cqFallback = $card['fallback_image_path'] ?? '';
 $cqStateLabel = match ($cqState) {
     'illuminated' => '✦ Iluminada' . ($cqQuantity > 1 ? ' · ×'.$cqQuantity : ''),
     'repeated' => 'Repetida · ×'.max(2, $cqQuantity),
@@ -21,7 +22,7 @@ $cqStateLabel = match ($cqState) {
     <div class="cq-saint-serial"><span>CRISMAQUEST</span><span>Nº <?= $cqNumber ?></span></div>
     <div class="cq-saint-window">
       <?php if ($cqOwned && $cqImage): ?>
-        <img src="<?= $cqEsc($cqImage) ?>" alt="<?= $cqEsc($card['name']) ?>" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+        <img src="<?= $cqEsc($cqImage) ?>" alt="<?= $cqEsc($card['name']) ?>" loading="lazy" decoding="async" referrerpolicy="no-referrer"<?= $cqFallback ? ' data-fallback="'.$cqEsc($cqFallback).'" onerror="if(this.dataset.fallback){this.onerror=null;this.src=this.dataset.fallback;}"' : '' ?>>
       <?php else: ?>
         <div class="cq-card-back" aria-label="Carta ainda não conquistada"><span class="cq-card-back-cross" aria-hidden="true">✦</span><span>UMA VIDA<br>UM TESTEMUNHO</span><small>Jornada da Crisma</small></div>
       <?php endif; ?>

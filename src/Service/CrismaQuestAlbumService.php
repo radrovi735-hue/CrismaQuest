@@ -41,6 +41,7 @@ final class CrismaQuestAlbumService
 
             $stateCounts = ['locked'=>0,'collected'=>0,'repeated'=>0,'illuminated'=>0];
             foreach ($cards as &$card) {
+                $card = CrismaQuestSaintCatalog::enrich($card);
                 $normal = (int)($card['quantity'] ?? 0);
                 $illuminated = (int)($card['illuminated_quantity'] ?? 0);
                 $totalQuantity = $normal + $illuminated;
