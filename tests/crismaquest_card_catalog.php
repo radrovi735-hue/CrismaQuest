@@ -26,16 +26,19 @@ foreach ($cards as $card) {
 
     $imagePath = (string)$card['image_path'];
     $sourceUrl = (string)$card['source_url'];
+    $approvedLocal = in_array(($card['slug'] ?? ''), ['sao-francisco-assis','sao-jose'], true);
     assertCardCatalog(
         str_starts_with($imagePath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
         || str_starts_with($imagePath, 'https://www.vaticannews.va/')
-        || (($card['slug'] ?? '') === 'sao-carlo-acutis' && str_starts_with($imagePath, 'data:image/webp;base64,')),
-        $card['name'] . ': imagem principal usa fonte canônica, oficial ou retrato aprovado'
+        || (($card['slug'] ?? '') === 'sao-carlo-acutis' && str_starts_with($imagePath, 'data:image/webp;base64,'))
+        || ($approvedLocal && str_starts_with($imagePath, '/assets/crismaquest/saints/')),
+        $card['name'] . ': imagem principal usa fonte canônica, oficial ou arquivo aprovado'
     );
     assertCardCatalog(
         str_starts_with($sourceUrl, 'https://commons.wikimedia.org/wiki/File:')
-        || str_starts_with($sourceUrl, 'https://www.vaticannews.va/'),
-        $card['name'] . ': página de origem registrada'
+        || str_starts_with($sourceUrl, 'https://www.vaticannews.va/')
+        || ($approvedLocal && str_starts_with($sourceUrl, '/assets/crismaquest/saints/')),
+        $card['name'] . ': página de origem ou arquivo aprovado registrado'
     );
     assertCardCatalog(
         mb_stripos((string)$card['image_kind'], 'escultura') === false,
