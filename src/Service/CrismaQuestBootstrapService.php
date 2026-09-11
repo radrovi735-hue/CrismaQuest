@@ -9,13 +9,14 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v7';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v8';
 
     public static function ensureInstalled(): void
     {
         $pdo = Database::getConnection();
 
         self::sanitizeLegacySeed($pdo);
+        CrismaQuestRosterService::ensureSeeded();
         self::curateSaintCharacters($pdo);
         self::syncSaintArtwork($pdo);
 
