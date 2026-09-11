@@ -9,7 +9,7 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v8';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v9';
 
     public static function ensureInstalled(): void
     {
@@ -60,7 +60,7 @@ class CrismaQuestBootstrapService
             $current = (string)($pdo->query(
                 "SELECT image_path FROM cq_saint_cards WHERE card_number=1 LIMIT 1"
             )->fetchColumn() ?: '');
-            $expected = 'https://www.vaticannews.va/content/dam/vaticannews/multimedia/2024/maggio/24/Carlo-Acutis.jpg/_jcr_content/renditions/cq5dam.thumbnail.cropped.750.422.jpeg';
+            $expected = '/assets/crismaquest/saints/sao-carlo-acutis-user.jpg';
             if ($current === $expected) return;
 
             self::importSqlFile($pdo, dirname(__DIR__,2).'/sql/crismaquest/002_saints_seed.sql');
@@ -123,16 +123,16 @@ class CrismaQuestBootstrapService
     private static function curateSaintCharacters(PDO $pdo): void
     {
         $legacy = [
-            ['São Carlo Acutis','Jovem testemunha de amor à Eucaristia e de evangelização no mundo digital.','https://commons.wikimedia.org/wiki/Special:FilePath/St._Carlo_Acutis.jpg'],
+            ['São Carlo Acutis','Jovem testemunha de amor à Eucaristia e de evangelização no mundo digital.','/assets/crismaquest/saints/sao-carlo-acutis-user.jpg'],
             ['Santa Teresinha do Menino Jesus','Recorda que a santidade também passa pelas pequenas coisas feitas com grande amor.','https://commons.wikimedia.org/wiki/Special:FilePath/Teresa-de-Lisieux.jpg'],
-            ['São Francisco de Assis','Inspira simplicidade, fraternidade, cuidado com a criação e alegria no seguimento de Cristo.','https://commons.wikimedia.org/wiki/Special:FilePath/Francis_of_Assisi_-_Cimabue.jpg'],
+            ['São Francisco de Assis','Inspira simplicidade, fraternidade, cuidado com a criação e alegria no seguimento de Cristo.','/assets/crismaquest/saints/sao-francisco-assis-user.jpg'],
             ['São Pedro','Discípulo chamado por Jesus a amadurecer na fé e servir à Igreja com coragem.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Peter_A26043.jpg'],
             ['Santa Faustina Kowalska','Testemunha da misericórdia de Deus e do chamado a confiar em Jesus.','https://commons.wikimedia.org/wiki/Special:FilePath/Faustyna_Kowalska.png'],
             ['São João Paulo II','Convidou os jovens a não terem medo de seguir Cristo e assumir sua missão no mundo.','https://commons.wikimedia.org/wiki/Special:FilePath/JohannesPaul2-portrait.jpg'],
             ['Santa Gianna Beretta Molla','Testemunha de vocação, serviço, responsabilidade e amor concreto ao próximo.','https://commons.wikimedia.org/wiki/Special:FilePath/Gianna_Beretta_Molla_(cropped).jpg'],
             ['Santo Agostinho','Sua busca pela verdade recorda que fé, razão e conversão caminham juntas.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Augustine_by_Philippe_de_Champaigne.jpg'],
             ['Santa Mônica','Exemplo de perseverança na oração, esperança e cuidado com a família.','https://commons.wikimedia.org/wiki/Special:FilePath/Sainte_Monique.jpg'],
-            ['São José','Modelo de fidelidade, trabalho, silêncio e disponibilidade ao projeto de Deus.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Joseph_with_the_Infant_Jesus_by_Guido_Reni,_c_1635.jpg'],
+            ['São José','Modelo de fidelidade, trabalho, silêncio e disponibilidade ao projeto de Deus.','/assets/crismaquest/saints/sao-jose-user.jpg'],
             ['São Vicente de Paulo','Mostra como a fé se torna caridade concreta e serviço aos mais vulneráveis.','https://commons.wikimedia.org/wiki/Special:FilePath/Anonymous_-_Portrait_de_saint_Vincent_de_Paul_(1581-1660)._-_P863_-_Musée_Carnavalet.jpg'],
             ['São Sebastião','Recorda a coragem de permanecer fiel a Cristo mesmo diante das dificuldades.','https://commons.wikimedia.org/wiki/Special:FilePath/Saint_Sebastian_painting.jpg'],
         ];
