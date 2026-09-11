@@ -181,18 +181,43 @@ final class CrismaQuestRewardService
             return null;
         }
 
-        $card = $pdo->query(
-            'SELECT sc.id, sc.name, sc.slug
+        // Prioriza transformar visualmente uma carta que o crismando já conhece,
+        // sem repetir uma edição iluminada enquanto houver outra opção disponível.
+        $select = $pdo->prepare(
+            'SELECT sc.id,sc.name,sc.slug,
+                    COALESCE(normal_user.quantity,0) AS normal_quantity,
+                    COALESCE(illuminated_user.quantity,0) AS illuminated_quantity
              FROM cq_saint_cards sc
+             LEFT JOIN cq_card_editions normal
+                    ON normal.card_id=sc.id AND normal.edition_type="normal" AND normal.active=1
+             LEFT JOIN cq_user_cards normal_user
+                    ON normal_user.card_edition_id=normal.id AND normal_user.user_id=:normal_user
+             LEFT JOIN cq_card_editions illuminated
+                    ON illuminated.card_id=sc.id AND illuminated.edition_type="illuminated" AND illuminated.active=1
+             LEFT JOIN cq_user_cards illuminated_user
+                    ON illuminated_user.card_edition_id=illuminated.id AND illuminated_user.user_id=:illuminated_user
              WHERE sc.active=1
-             ORDER BY sc.card_number ASC LIMIT 1'
-        )->fetch(PDO::FETCH_ASSOC);
+             ORDER BY
+                CASE
+                    WHEN COALESCE(normal_user.quantity,0)>0 AND COALESCE(illuminated_user.quantity,0)=0 THEN 0
+                    WHEN COALESCE(illuminated_user.quantity,0)=0 THEN 1
+                    ELSE 2
+                END,
+                CRC32(CONCAT(sc.card_number,:seed)) ASC
+             LIMIT 1'
+        );
+        $select->execute([
+            'normal_user'=>$userId,
+            'illuminated_user'=>$userId,
+            'seed'=>$rewardKey . ':' . $userId,
+        ]);
+        $card = $select->fetch(PDO::FETCH_ASSOC);
         if (!$card) return null;
 
         $pdo->prepare(
             'INSERT INTO cq_card_editions (card_id,edition_type,visual_asset,chance_weight,active)
              VALUES (:card,"illuminated",NULL,20,1)
-             ON DUPLICATE KEY UPDATE active=1'
+             ON DUPLICATE KEY UPDATE chance_weight=20,active=1'
         )->execute(['card'=>(int)$card['id']]);
 
         $edition = $pdo->prepare(
@@ -208,7 +233,12 @@ final class CrismaQuestRewardService
              ON DUPLICATE KEY UPDATE quantity=quantity+1'
         )->execute(['u'=>$userId,'e'=>$editionId]);
 
-        return ['id'=>$editionId,'name'=>$card['name'],'slug'=>$card['slug'],'edition_type'=>'illuminated'];
+        return [
+            'id'=>$editionId,
+            'name'=>$card['name'],
+            'slug'=>$card['slug'],
+            'edition_type'=>'illuminated',
+        ];
     }
 
     public function grantCosmetic(PDO $pdo, int $userId, string $slug, string $rewardKey): bool
