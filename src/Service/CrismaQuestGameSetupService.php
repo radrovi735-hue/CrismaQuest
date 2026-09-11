@@ -39,6 +39,8 @@ final class CrismaQuestGameSetupService
             'levels' => $this->safeCount($pdo, 'cq_game_levels'),
             'badges' => $this->catalogCount($pdo, 'cq_badge_catalog'),
             'chests' => $this->catalogCount($pdo, 'cq_chest_catalog'),
+            'saints' => $this->safeCount($pdo, 'cq_saint_cards', 'active=1'),
+            'normalEditions' => $this->safeCount($pdo, 'cq_card_editions', 'active=1 AND edition_type="normal"'),
         ];
 
         $phase = 0;
@@ -59,7 +61,9 @@ final class CrismaQuestGameSetupService
             && $counts['sparks'] === 60
             && $counts['levels'] === 8
             && $counts['badges'] === 14
-            && $counts['chests'] === 9;
+            && $counts['chests'] === 9
+            && $counts['saints'] === 40
+            && $counts['normalEditions'] === 40;
 
         return [
             'ready'=>$ready,
