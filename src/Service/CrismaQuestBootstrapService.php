@@ -9,7 +9,7 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v6';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v7';
 
     public static function ensureInstalled(): void
     {
@@ -17,6 +17,7 @@ class CrismaQuestBootstrapService
 
         self::sanitizeLegacySeed($pdo);
         self::curateSaintCharacters($pdo);
+        self::syncSaintArtwork($pdo);
 
         if (self::isCoreReady($pdo) && self::isSocialReady($pdo)) return;
 
@@ -37,6 +38,33 @@ class CrismaQuestBootstrapService
             }
         } finally {
             try { $release=$pdo->prepare('SELECT RELEASE_LOCK(:lock_name)'); $release->execute(['lock_name'=>self::LOCK_NAME]); } catch (Throwable) {}
+        }
+    }
+
+    /**
+     * Atualiza instalações já completas quando muda apenas a curadoria visual.
+     * A consulta é barata e o seed só é reaplicado enquanto a imagem canônica
+     * de Carlo ainda não estiver presente no banco.
+     */
+    private static function syncSaintArtwork(PDO $pdo): void
+    {
+        try {
+            $tables = $pdo->query(
+                "SELECT COUNT(*) FROM information_schema.tables
+                 WHERE table_schema=DATABASE()
+                   AND table_name IN ('cq_saint_cards','cq_card_editions')"
+            );
+            if ((int)$tables->fetchColumn() !== 2) return;
+
+            $current = (string)($pdo->query(
+                "SELECT image_path FROM cq_saint_cards WHERE card_number=1 LIMIT 1"
+            )->fetchColumn() ?: '');
+            $expected = 'https://commons.wikimedia.org/wiki/Special:Redirect/file/San%20Publije%20Malta%20(1).jpg';
+            if ($current === $expected) return;
+
+            self::importSqlFile($pdo, dirname(__DIR__,2).'/sql/crismaquest/002_saints_seed.sql');
+        } catch (Throwable) {
+            // Curadoria visual nunca impede o app de abrir; a próxima requisição tenta novamente.
         }
     }
 
