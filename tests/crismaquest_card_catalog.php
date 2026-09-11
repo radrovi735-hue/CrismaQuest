@@ -29,13 +29,15 @@ foreach ($cards as $card) {
     assertCardCatalog(
         str_starts_with($imagePath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
         || str_starts_with($imagePath, 'https://www.vaticannews.va/')
-        || str_starts_with($imagePath, '/assets/crismaquest/saints/'),
+        || str_starts_with($imagePath, '/assets/crismaquest/saints/')
+        || str_starts_with($imagePath, 'https://www.ctsbooks.org/'),
         $card['name'] . ': imagem principal usa fonte canônica, oficial ou arquivo aprovado'
     );
     assertCardCatalog(
         str_starts_with($sourceUrl, 'https://commons.wikimedia.org/wiki/File:')
         || str_starts_with($sourceUrl, 'https://www.vaticannews.va/')
-        || str_starts_with($sourceUrl, '/assets/crismaquest/saints/'),
+        || str_starts_with($sourceUrl, '/assets/crismaquest/saints/')
+        || str_starts_with($sourceUrl, 'https://www.ctsbooks.org/'),
         $card['name'] . ': origem registrada'
     );
     assertCardCatalog(
@@ -63,16 +65,16 @@ $staleCarlo = CrismaQuestSaintCatalog::enrich([
     'quantity'=>1,
 ]);
 assertCardCatalog(
-    (string)$staleCarlo['image_path'] === '/assets/crismaquest/saints/sao-carlo-acutis-user.jpg',
+    (string)$staleCarlo['image_path'] === 'https://www.ctsbooks.org/wp-content/uploads/2025/10/St-Carlo-Acutis-Prayer-Card-1.png.webp',
     'aluno com registro antigo recebe a imagem aprovada do Carlo'
 );
 assertCardCatalog((int)$staleCarlo['quantity'] === 1, 'enriquecimento preserva dados do aluno');
 
 $approved = [
-    'sao-francisco-assis'=>'/assets/crismaquest/saints/sao-francisco-assis-user.jpg',
-    'sao-carlo-acutis'=>'/assets/crismaquest/saints/sao-carlo-acutis-user.jpg',
-    'sao-jeronimo'=>'/assets/crismaquest/saints/sao-jeronimo-user.jpg',
-    'sao-jose'=>'/assets/crismaquest/saints/sao-jose-user.jpg',
+    'sao-francisco-assis'=>'/assets/crismaquest/saints/sao-francisco-assis-user.jpg?v=20260911f',
+    'sao-carlo-acutis'=>'https://www.ctsbooks.org/wp-content/uploads/2025/10/St-Carlo-Acutis-Prayer-Card-1.png.webp',
+    'sao-jeronimo'=>'/assets/crismaquest/saints/sao-jeronimo-user.jpg?v=20260911f',
+    'sao-jose'=>'/assets/crismaquest/saints/sao-jose-user.jpg?v=20260911f',
 ];
 foreach ($approved as $slug=>$path) {
     $card = array_values(array_filter($cards, static fn(array $item): bool => $item['slug'] === $slug))[0] ?? null;
