@@ -28,8 +28,9 @@ foreach ($cards as $card) {
     $sourceUrl = (string)$card['source_url'];
     assertCardCatalog(
         str_starts_with($imagePath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
-        || str_starts_with($imagePath, 'https://www.vaticannews.va/'),
-        $card['name'] . ': imagem principal usa fonte canônica ou oficial'
+        || str_starts_with($imagePath, 'https://www.vaticannews.va/')
+        || (($card['slug'] ?? '') === 'sao-carlo-acutis' && str_starts_with($imagePath, 'data:image/webp;base64,')),
+        $card['name'] . ': imagem principal usa fonte canônica, oficial ou retrato aprovado'
     );
     assertCardCatalog(
         str_starts_with($sourceUrl, 'https://commons.wikimedia.org/wiki/File:')
@@ -44,8 +45,9 @@ foreach ($cards as $card) {
     $fallbackPath = (string)$card['fallback_image_path'];
     if (str_starts_with($fallbackPath, 'https://')) {
         assertCardCatalog(
-            str_starts_with($fallbackPath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/'),
-            $card['name'] . ': fallback remoto vem de fonte livre'
+            str_starts_with($fallbackPath, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/')
+            || (($card['slug'] ?? '') === 'sao-carlo-acutis' && str_starts_with($fallbackPath, 'https://www.vaticannews.va/')),
+            $card['name'] . ': fallback remoto reconhecido'
         );
     } else {
         $fallback = dirname(__DIR__) . '/public' . $fallbackPath;
@@ -54,4 +56,15 @@ foreach ($cards as $card) {
     }
 }
 
-echo "PASS: 40 cartas com imagem canônica reconhecível e fallback local\n";
+$staleCarlo = CrismaQuestSaintCatalog::enrich([
+    'slug'=>'sao-carlo-acutis',
+    'image_path'=>'/assets/crismaquest/saints/sao-carlo-acutis.jpg',
+    'quantity'=>1,
+]);
+assertCardCatalog(
+    str_starts_with((string)$staleCarlo['image_path'], 'data:image/webp;base64,'),
+    'aluno com registro antigo recebe o retrato vertical novo'
+);
+assertCardCatalog((int)$staleCarlo['quantity'] === 1, 'enriquecimento preserva dados do aluno');
+
+echo "PASS: 40 cartas com imagem canônica reconhecível e Carlo vertical para todos os alunos\n";
