@@ -91,7 +91,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Faustyna_Kowalska.png#Licensing",
     "source_description": "St. Faustina Kowalska before 1938",
     "image_path": "/assets/crismaquest/saints/santa-faustina-kowalska.png",
-    "sha256": "e4e1d32bbb49778618f1e0e2e99a7d7c1013963ad086ae57db7e2014e0eda3a8",
+    "sha256": "b42dae506b8a31344f41407bbabc58aa12457a31fc9070fc795142a4ed048a1c",
     "bytes": 877372
   },
   {
@@ -148,7 +148,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Champaigne,_Philippe_de_-_Saint_Augustin_-_1645-1650.jpg#Licensing",
     "source_description": "",
     "image_path": "/assets/crismaquest/saints/santo-agostinho.jpg",
-    "sha256": "9f9da7ccb21f34386304eb891ff67d1517393ecefed17301045f58d8f9450b46",
+    "sha256": "bb55b0e89806d759ddf574d604e8967d2a3efbdc4ee6818c357da6d77db9e02b",
     "bytes": 1703136
   },
   {
@@ -186,7 +186,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Saint_Joseph_with_the_Infant_Jesus_by_Guido_Reni,_c_1635.jpg#Licensing",
     "source_description": "St Joseph with the Infant Jesus",
     "image_path": "/assets/crismaquest/saints/sao-jose.jpg",
-    "sha256": "e6857020b55e6f245070286d3ffcec0ed11abf5231d0c2d1ae439f47f6aec29d",
+    "sha256": "cda98fbb56b2a486dc9e5e2a989dbaa0e119cbca4552ca7e12e71a02a55807b4",
     "bytes": 961985
   },
   {
@@ -205,7 +205,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Anonymous_-_Portrait_de_saint_Vincent_de_Paul_(1581-1660)._-_P863_-_Mus%C3%A9e_Carnavalet.jpg#Licensing",
     "source_description": "",
     "image_path": "/assets/crismaquest/saints/sao-vicente-de-paulo.jpg",
-    "sha256": "65954c486f88a1dd6fb02ffb9cd6c3bbffd79c7be39799d6629429d0b487e23b",
+    "sha256": "a6ec8998bc6699a7c72d65262d397a6628847dbdc2177d1839b5dd2cbe438a77",
     "bytes": 2221356
   },
   {
@@ -224,7 +224,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Jan_van_Eyck_-_Saint_Jerome_in_His_Study_DIA.jpg#Licensing",
     "source_description": "",
     "image_path": "/assets/crismaquest/saints/sao-jeronimo.jpg",
-    "sha256": "d9a185a961dbebf78633193fa77b3c06782ce94141a5fd7dd2034abde1fd8902",
+    "sha256": "271895041817f5e940f05616a8170ef859257dc0a7aa302b9586f548ed812f33",
     "bytes": 2073307
   },
   {
@@ -262,7 +262,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:John_Everett_Millais_-_Joan_of_Arc.jpg#Licensing",
     "source_description": "Juana of Arco",
     "image_path": "/assets/crismaquest/saints/santa-joana-darc.jpg",
-    "sha256": "c5aa07db58f6caa63509ad2d1830abfbd12ee12ba318f00a6d984e2603ad641a",
+    "sha256": "5930679202d285aa4179adb6c15f20024fbc956e2523f6dce23f62387540b541",
     "bytes": 883116
   },
   {
@@ -281,7 +281,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:John_Henry_Newman_1887_Portrait_Photograph.jpg#Licensing",
     "source_description": "1887 portrait photograph of John Henry Newman",
     "image_path": "/assets/crismaquest/saints/sao-john-henry-newman.jpg",
-    "sha256": "892339ee57f6a2bac89714e5e4a9f97de638e6d1054dd14e622737b404d1c4ba",
+    "sha256": "b7958426071e254e07c68106dadd5b72a96332012bcf942c75983997719bfa14",
     "bytes": 1043606
   },
   {
@@ -376,7 +376,7 @@
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
     "source_description": "Saint Sebastian painting",
     "image_path": "/assets/crismaquest/saints/sao-sebastiao.jpg",
-    "sha256": "e69b49cdc5635b1b9fdfcf784ec4f0315b87076f684e7772d9bbd5b9e8bbd50c",
+    "sha256": "0ec522807be9b4866851242d017ef989b6e88b1c8662c782db7fdd22e84f7d45",
     "bytes": 1331195
   },
   {
@@ -414,7 +414,7 @@
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
     "source_description": "",
     "image_path": "/assets/crismaquest/saints/santa-clara-assis.jpg",
-    "sha256": "e09f1b0924d8a39664cf4404f35baa6a923dc26263d77595ae990c31b4a5c2e0",
+    "sha256": "beccd6b2722797eff7513db9ffe46617a04b5fd8c68e1bca74836314c7dc131b",
     "bytes": 2558008
   },
   {
@@ -490,7 +490,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Saint_Anthony_of_Padua_Sano_di_Pietro.webp#Licensing",
     "source_description": "",
     "image_path": "/assets/crismaquest/saints/santo-antonio-padua.webp",
-    "sha256": "64b34f4acfc6b97f20988ebc11aeb7f7d51b0cfd6fce2b91b9343b11b64595d1",
+    "sha256": "75237858c2442c978dec1dbfaa9b2de0971510b470518125103527bffe598ed4",
     "bytes": 2587758
   },
   {
@@ -547,7 +547,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Andr%C3%A9_Vincent_-_Saint_John_the_Evangelist_-_80.6_-_Detroit_Institute_of_Arts.jpg#Licensing",
     "source_description": "",
     "image_path": "/assets/crismaquest/saints/sao-joao-evangelista.jpg",
-    "sha256": "f16ccbd1452628e29a3c954eea6418466135d7db9189bc5f1c8617416b2c38ff",
+    "sha256": "bc0e6403058e490ed8ffa7c13a9971e1d90275cec253c0ed695ac8ab4938cee0",
     "bytes": 895601
   },
   {
@@ -718,7 +718,7 @@
     "license_url": "https://commons.wikimedia.org/wiki/File:Edith_Stein_(ca._1938-1939).jpg#Licensing",
     "source_description": "The so-called \"passport\" photo taken in the doorway of the Cologne Carmel. A passport picture that Edith Stein (1891–1942) had to have taken for her passport (ca. December 1938-1939) before moving to Echt, Netherlands. Edith Stein, a German Jewish philosopher, converted to the Roman Catholic Church, became a Discalced Carmelite nun and took the religious name of Teresa Benedicta of the Cross. On 7 August 1942, she was deported to the Auschwitz concentration camp and killed in a mass gas chamber.",
     "image_path": "/assets/crismaquest/saints/santa-teresa-benedita-cruz.jpg",
-    "sha256": "8a2fdd93d8c1130a38ff8bf4b22c6f5f931b73156b410b6d83540e3e26efa15e",
+    "sha256": "6bbd0730f361d8fda85f3c4d4c9f8b186a464d7e05f753c5288eb6acf121e3dd",
     "bytes": 1447505
   },
   {
