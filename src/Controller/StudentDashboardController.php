@@ -75,9 +75,12 @@ class StudentDashboardController
             default => 'CrismaQuest',
         };
 
+        $pageStyles = ['/css/crismaquest-app.css'];
+        if ($requestedView === 'album') $pageStyles[] = '/css/crismaquest-collection.css?v=20260911c';
+
         View::render($view, array_merge($data, [
             'title' => $title,
-            'pageStyles' => ['/css/crismaquest-app.css'],
+            'pageStyles' => $pageStyles,
             'useMathJax' => false,
         ]), 'mainStudLayout');
     }

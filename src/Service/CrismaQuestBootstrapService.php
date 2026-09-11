@@ -9,7 +9,7 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v5';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v6';
 
     public static function ensureInstalled(): void
     {
@@ -195,8 +195,8 @@ class CrismaQuestBootstrapService
         try {
             $q=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('cq_streaks','cq_streak_events','cq_saint_cards','cq_card_editions','cq_user_cards','cq_meetings','cq_attendance','cq_attendance_audit')");
             if ((int)$q->fetchColumn() !== 8) return false;
-            return (int)$pdo->query('SELECT COUNT(*) FROM cq_saint_cards')->fetchColumn() >= 20
-                && (int)$pdo->query("SELECT COUNT(*) FROM cq_card_editions WHERE edition_type='normal'")->fetchColumn() >= 20;
+            return (int)$pdo->query('SELECT COUNT(*) FROM cq_saint_cards')->fetchColumn() >= 40
+                && (int)$pdo->query("SELECT COUNT(*) FROM cq_card_editions WHERE edition_type='normal'")->fetchColumn() >= 40;
         } catch (Throwable) { return false; }
     }
 

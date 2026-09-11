@@ -295,6 +295,10 @@ final class CrismaQuestGameService
             $stmt->execute(['id'=>$chestId]);
             $chest = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$chest) throw new RuntimeException('Baú indisponível.');
+            // Compatibilidade com instalações anteriores ao catálogo final de cosméticos.
+            if (($chest['slug'] ?? '') === 'envio' && ($chest['cosmetic_slug'] ?? '') === 'tema-caminho') {
+                $chest['cosmetic_slug'] = 'tema-padroeiros';
+            }
             if ($xp < (int)$chest['threshold_xp']) throw new RuntimeException('Você ainda não alcançou o XP necessário.');
 
             $insert = $pdo->prepare('INSERT IGNORE INTO cq_user_chests (user_id,chest_id,result_json) VALUES (:u,:c,NULL)');
@@ -985,22 +989,30 @@ final class CrismaQuestGameService
         $xpStmt->execute(['s'=>$studentId]);
         $xp = (int)$xpStmt->fetchColumn();
         $stmt = $pdo->prepare(
-            'SELECT c.*
+            'SELECT c.*,uc.claimed_at,uc.result_json,
+                    CASE
+                      WHEN uc.id IS NOT NULL THEN "claimed"
+                      WHEN c.threshold_xp<=:xp_state THEN "available"
+                      ELSE "locked"
+                    END AS chest_state
              FROM cq_chest_catalog c
              LEFT JOIN cq_user_chests uc ON uc.chest_id=c.id AND uc.user_id=:u
-             WHERE c.active=1 AND c.threshold_xp<=:xp AND uc.id IS NULL
+             WHERE c.active=1
              ORDER BY c.threshold_xp'
         );
-        $stmt->execute(['u'=>$userId,'xp'=>$xp]);
+        $stmt->execute(['u'=>$userId,'xp_state'=>$xp]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     private function userBadges(PDO $pdo, int $userId): array
     {
         $stmt = $pdo->prepare(
-            'SELECT b.*, ub.earned_at
-             FROM cq_user_badges ub JOIN cq_badge_catalog b ON b.id=ub.badge_id
-             WHERE ub.user_id=:u ORDER BY ub.earned_at DESC'
+            'SELECT b.*,ub.earned_at,
+                    CASE WHEN ub.id IS NULL THEN "locked" ELSE "earned" END AS badge_state
+             FROM cq_badge_catalog b
+             LEFT JOIN cq_user_badges ub ON ub.badge_id=b.id AND ub.user_id=:u
+             WHERE b.active=1
+             ORDER BY b.id'
         );
         $stmt->execute(['u'=>$userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];

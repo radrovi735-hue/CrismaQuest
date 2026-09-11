@@ -15,6 +15,7 @@ try {
 
 $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $duplicates = array_values(array_filter($cards ?? [], static fn($c) => (int)($c['quantity'] ?? 0) >= 2));
+$ownedCosmeticIds = array_fill_keys(array_map(static fn($c) => (int)($c['gift_catalog_id'] ?? 0), $cosmetics ?? []), true);
 ?>
 <div class="cq-social-shell">
   <section class="cq-social-hero">
@@ -60,6 +61,27 @@ $duplicates = array_values(array_filter($cards ?? [], static fn($c) => (int)($c[
       </form>
     </section>
   </div>
+
+  <section class="cq-social-card cq-wide">
+    <div class="cq-section-head">
+      <div><div class="cq-social-kicker">Presentes e personalização</div><h2>Catálogo da Jornada</h2></div>
+      <span class="cq-info-chip"><?= count($catalog ?? []) ?> opções ativas</span>
+    </div>
+    <p class="cq-catalog-intro">Presentes simbólicos custam Lúmens. Os visuais mudam apenas a aparência do jogo e podem ser equipados depois de recebidos.</p>
+    <div class="cq-gift-catalog-grid">
+      <?php foreach (($catalog ?? []) as $gift):
+        $isCosmetic = ($gift['category'] ?? '') === 'cosmetic';
+        $owned = $isCosmetic && isset($ownedCosmeticIds[(int)$gift['id']]);
+      ?>
+        <article class="cq-gift-catalog-item <?= $isCosmetic ? 'is-cosmetic' : 'is-gift' ?>">
+          <span class="cq-gift-icon"><i class="fa-solid <?= $h($gift['icon'] ?: 'fa-gift') ?>"></i></span>
+          <div><small><?= $isCosmetic ? 'Visual' : 'Presente' ?></small><strong><?= $h($gift['name']) ?></strong></div>
+          <span class="cq-gift-price"><i class="fa-solid fa-sun"></i> <?= (int)$gift['cost_lumens'] ?></span>
+          <?php if ($owned): ?><span class="cq-owned-mark"><i class="fa-solid fa-check"></i> Você possui</span><?php endif; ?>
+        </article>
+      <?php endforeach; ?>
+    </div>
+  </section>
 
   <section class="cq-social-card cq-wide">
     <div class="cq-section-head"><div><div class="cq-social-kicker">Coleção</div><h2>Cartas: presentear ou trocar</h2></div><span class="cq-info-chip">Somente repetidas podem sair do seu álbum</span></div>

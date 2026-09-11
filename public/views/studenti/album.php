@@ -1,122 +1,142 @@
 <?php
-$album = $crismaquestAlbum ?? ['cards'=>[],'collected'=>0,'total'=>0,'progressPercent'=>0];
+$album = $crismaquestAlbum ?? ['cards'=>[],'collected'=>0,'total'=>0,'progressPercent'=>0,'stateCounts'=>[]];
 $cards = $album['cards'] ?? [];
-$iconFor = static function (string $category): string {
-    $c = mb_strtolower($category);
-    if (str_contains($c,'apóst')) return 'fa-key';
-    if (str_contains($c,'mártir')) return 'fa-shield-heart';
-    if (str_contains($c,'doutor')) return 'fa-book-open';
-    if (str_contains($c,'jov')) return 'fa-star';
-    if (str_contains($c,'papa')) return 'fa-church';
-    if (str_contains($c,'mission')) return 'fa-earth-americas';
-    if (str_contains($c,'fund')) return 'fa-seedling';
-    return 'fa-cross';
-};
-$firstCollected = null;
-$hasDuplicate = false;
+$stateCounts = $album['stateCounts'] ?? ['locked'=>0,'collected'=>0,'repeated'=>0,'illuminated'=>0];
+$h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+$firstOwned = null;
+$details = [];
 foreach ($cards as $candidate) {
-    if ((int)($candidate['quantity'] ?? 0) > 0 && $firstCollected === null) $firstCollected = $candidate;
-    if ((int)($candidate['quantity'] ?? 0) > 1) $hasDuplicate = true;
+    if (($candidate['collection_state'] ?? 'locked') !== 'locked' && $firstOwned === null) $firstOwned = $candidate;
+    $details[(string)$candidate['slug']] = [
+        'name'=>(string)$candidate['name'],
+        'category'=>(string)$candidate['category'],
+        'number'=>(int)$candidate['card_number'],
+        'bio'=>(string)$candidate['short_bio'],
+        'teaching'=>(string)($candidate['short_teaching'] ?? ''),
+        'image'=>(string)($candidate['image_path'] ?? ''),
+        'state'=>(string)($candidate['collection_state'] ?? 'locked'),
+        'normalQuantity'=>(int)($candidate['quantity'] ?? 0),
+        'illuminatedQuantity'=>(int)($candidate['illuminated_quantity'] ?? 0),
+    ];
 }
 ?>
 <div class="cq-student-shell">
-    <section class="cq-card mb-3">
-        <div class="d-flex flex-column flex-sm-row justify-content-between gap-3 align-items-sm-center">
-            <div>
-                <div class="cq-card-eyebrow">Coleção catequética</div>
-                <h2>Álbum dos Santos</h2>
-                <p class="mb-0">Conheça testemunhas reais da fé. As cartas são descobertas ao longo da Jornada.</p>
-            </div>
-            <div style="min-width:190px">
-                <div class="d-flex justify-content-between" style="font-family:Arial,sans-serif;font-size:12px;color:#625d56"><strong><?= (int)($album['collected'] ?? 0) ?> de <?= (int)($album['total'] ?? 0) ?> cartas</strong><span><?= (int)($album['progressPercent'] ?? 0) ?>%</span></div>
-                <div class="cq-progress mt-2" style="background:#e8dcc9"><span style="width:<?= (int)($album['progressPercent'] ?? 0) ?>%"></span></div>
-            </div>
-        </div>
-        <?php if ($hasDuplicate): ?>
-            <div class="mt-3"><a href="/studenti/correio" class="cq-secondary-btn"><i class="fa-solid fa-right-left"></i> Trocar ou presentear repetidas</a></div>
-        <?php endif; ?>
-    </section>
+<main class="cq-collection" id="cqAlbum">
+  <section class="cq-collection-hero">
+    <div>
+      <div class="cq-collection-eyebrow">Coleção catequética</div>
+      <h1>Álbum dos Santos</h1>
+      <p>Vidas reais que acompanham a Jornada. Cada imagem é preservada em sua composição original; a moldura identifica apenas o estado da carta no jogo.</p>
+    </div>
+    <div class="cq-collection-progress">
+      <strong><?= (int)($album['collected'] ?? 0) ?>/<?= (int)($album['total'] ?? 0) ?></strong>
+      <span><?= (int)($album['progressPercent'] ?? 0) ?>% da coleção descoberta</span>
+    </div>
+  </section>
 
-    <div class="d-flex flex-wrap gap-2 mb-3" aria-label="Filtrar categorias do álbum" id="cqAlbumFilters">
-        <button type="button" class="cq-chip cq-album-filter active" data-filter="">Todos</button>
-        <button type="button" class="cq-chip cq-album-filter" data-filter="jov">Jovens</button>
-        <button type="button" class="cq-chip cq-album-filter" data-filter="apóst">Apóstolos</button>
-        <button type="button" class="cq-chip cq-album-filter" data-filter="mártir">Mártires</button>
-        <button type="button" class="cq-chip cq-album-filter" data-filter="mission">Missionários</button>
-        <button type="button" class="cq-chip cq-album-filter" data-filter="doutor">Doutores</button>
+  <div class="cq-state-summary" aria-label="Resumo do álbum">
+    <span class="cq-state-pill"><b><?= (int)($stateCounts['locked'] ?? 0) ?></b> por conquistar</span>
+    <span class="cq-state-pill"><b><?= (int)($stateCounts['collected'] ?? 0) ?></b> coletadas</span>
+    <span class="cq-state-pill is-repeat"><b><?= (int)($stateCounts['repeated'] ?? 0) ?></b> repetidas</span>
+    <span class="cq-state-pill is-light"><b><?= (int)($stateCounts['illuminated'] ?? 0) ?></b> iluminadas</span>
+  </div>
+
+  <div class="cq-collection-toolbar" aria-label="Ferramentas do álbum">
+    <input id="cqAlbumSearch" type="search" placeholder="Buscar santo ou categoria" autocomplete="off">
+    <button type="button" aria-pressed="true" data-album-state="">Todas</button>
+    <button type="button" aria-pressed="false" data-album-state="collected">Coletadas</button>
+    <button type="button" aria-pressed="false" data-album-state="repeated">Repetidas</button>
+    <button type="button" aria-pressed="false" data-album-state="illuminated">Iluminadas</button>
+    <button type="button" aria-pressed="false" data-album-state="locked">Bloqueadas</button>
+  </div>
+
+  <?php if ($cards === []): ?>
+    <section class="cq-album-empty"><i class="fa-solid fa-images"></i><h2>O Álbum está sendo preparado.</h2><p>As cartas aparecerão quando o catálogo catequético estiver disponível.</p></section>
+  <?php else: ?>
+    <div class="cq-collection-grid" id="cqAlbumGrid">
+      <?php foreach ($cards as $card): ?>
+        <div class="cq-album-cell"
+             data-state="<?= $h($card['collection_state'] ?? 'locked') ?>"
+             data-search="<?= $h(mb_strtolower(($card['name'] ?? '').' '.($card['category'] ?? ''), 'UTF-8')) ?>">
+          <?php require __DIR__.'/../components/saintCard.php'; ?>
+        </div>
+      <?php endforeach; ?>
     </div>
 
-    <?php if ($cards === []): ?>
-        <section class="cq-card"><h3>O Álbum está sendo preparado.</h3><p class="mb-0">As cartas aparecerão aqui assim que o catálogo catequético for carregado.</p></section>
-    <?php else: ?>
-        <div class="row g-3" id="cqAlbumGrid">
-            <?php foreach ($cards as $card):
-                $collected = (int)($card['quantity'] ?? 0) > 0;
-                $icon = $iconFor((string)($card['category'] ?? ''));
-            ?>
-                <div class="col-6 col-md-4 col-lg-3 cq-album-cell" data-category="<?= htmlspecialchars(mb_strtolower((string)$card['category']), ENT_QUOTES) ?>">
-                    <button type="button"
-                        class="cq-card h-100 w-100 text-center cq-saint-card-btn"
-                        style="padding:10px;border-style:solid;<?= !$collected ? 'filter:grayscale(.82);opacity:.7;cursor:default' : 'cursor:pointer' ?>"
-                        <?= !$collected ? 'disabled' : '' ?>
-                        data-name="<?= htmlspecialchars((string)$card['name'], ENT_QUOTES) ?>"
-                        data-category="<?= htmlspecialchars((string)$card['category'], ENT_QUOTES) ?>"
-                        data-bio="<?= htmlspecialchars((string)$card['short_bio'], ENT_QUOTES) ?>"
-                        data-teaching="<?= htmlspecialchars((string)($card['short_teaching'] ?? ''), ENT_QUOTES) ?>"
-                        data-number="<?= (int)$card['card_number'] ?>">
-                        <div class="cq-saint-art" style="height:150px;font-size:42px;<?= !$collected ? 'background:linear-gradient(145deg,#5e625d,#8d887f);color:#e7e0d4' : '' ?>">
-                            <i class="fa-solid <?= $collected ? htmlspecialchars($icon) : 'fa-lock' ?>"></i>
-                        </div>
-                        <div class="cq-card-eyebrow mt-2"><?= htmlspecialchars((string)$card['category']) ?></div>
-                        <h3 style="font-size:16px;margin-top:4px"><?= $collected ? htmlspecialchars((string)$card['name']) : 'Carta ' . str_pad((string)$card['card_number'],2,'0',STR_PAD_LEFT) ?></h3>
-                        <p style="font-size:12px;margin-bottom:4px"><?= $collected ? htmlspecialchars((string)($card['short_teaching'] ?? '')) : 'Descubra esta testemunha em uma missão ou recompensa.' ?></p>
-                        <?php if ($collected): ?><span class="cq-chip mt-1"><i class="fa-solid fa-check"></i> Coletada<?= (int)$card['quantity'] > 1 ? ' · x'.(int)$card['quantity'] : '' ?></span><?php endif; ?>
-                    </button>
-                </div>
-            <?php endforeach; ?>
-        </div>
-
-        <?php if ($firstCollected): ?>
-            <section class="cq-card mt-3" id="cqSaintDetail">
-                <div class="row g-3 align-items-center">
-                    <div class="col-sm-4"><div class="cq-saint-art" style="height:220px;font-size:68px"><i id="cqDetailIcon" class="fa-solid <?= htmlspecialchars($iconFor((string)$firstCollected['category'])) ?>"></i></div></div>
-                    <div class="col-sm-8">
-                        <div class="cq-card-eyebrow" id="cqDetailCategory"><?= htmlspecialchars((string)$firstCollected['category']) ?> · Carta <?= str_pad((string)$firstCollected['card_number'],2,'0',STR_PAD_LEFT) ?></div>
-                        <h2 id="cqDetailName"><?= htmlspecialchars((string)$firstCollected['name']) ?></h2>
-                        <p id="cqDetailBio"><?= htmlspecialchars((string)$firstCollected['short_bio']) ?></p>
-                        <div style="border-left:3px solid #c8a55c;padding-left:13px;color:#315044;font-weight:700" id="cqDetailTeaching"><?= htmlspecialchars((string)($firstCollected['short_teaching'] ?? '')) ?></div>
-                    </div>
-                </div>
-            </section>
-        <?php endif; ?>
-    <?php endif; ?>
-
-    <section class="cq-card mt-3">
-        <div class="cq-card-eyebrow">Regra do Álbum</div>
-        <h3>Não existe “santo raro”.</h3>
-        <p class="mb-0">Quando houver versões especiais, a diferença será apenas a edição visual da carta. O valor catequético de cada testemunho permanece o mesmo.</p>
+    <?php if ($firstOwned): ?>
+    <section class="cq-album-detail" id="cqSaintDetail" aria-live="polite">
+      <div class="cq-album-detail-art"><img id="cqDetailImage" src="<?= $h($firstOwned['image_path'] ?? '') ?>" alt="<?= $h($firstOwned['name']) ?>"></div>
+      <div class="cq-album-detail-copy">
+        <div class="cq-collection-eyebrow" id="cqDetailCategory"><?= $h($firstOwned['category']) ?> · Carta <?= str_pad((string)$firstOwned['card_number'],2,'0',STR_PAD_LEFT) ?></div>
+        <h2 id="cqDetailName"><?= $h($firstOwned['name']) ?></h2>
+        <p id="cqDetailBio"><?= $h($firstOwned['short_bio']) ?></p>
+        <blockquote id="cqDetailTeaching"><?= $h($firstOwned['short_teaching'] ?? '') ?></blockquote>
+        <span class="cq-detail-state" id="cqDetailState"></span>
+      </div>
     </section>
+    <?php endif; ?>
+  <?php endif; ?>
+
+  <?php if (($stateCounts['repeated'] ?? 0) > 0): ?>
+    <section class="cq-album-trade"><div><strong>Você tem cartas repetidas.</strong><span>Elas podem ser presenteadas ou usadas em trocas no Correio da Jornada.</span></div><a href="/studenti/correio">Abrir Correio <i class="fa-solid fa-arrow-right"></i></a></section>
+  <?php endif; ?>
+
+  <section class="cq-album-rule">
+    <strong>Uma vida, um testemunho.</strong>
+    <span>Não existe “santo raro”. A edição iluminada muda apenas a moldura visual; todas as testemunhas têm o mesmo valor catequético.</span>
+  </section>
+</main>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
-  const detail=document.getElementById('cqSaintDetail');
-  if(detail){
-    document.querySelectorAll('.cq-saint-card-btn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>{
-      document.getElementById('cqDetailName').textContent=btn.dataset.name||'';
-      document.getElementById('cqDetailCategory').textContent=(btn.dataset.category||'')+' · Carta '+String(btn.dataset.number||'').padStart(2,'0');
-      document.getElementById('cqDetailBio').textContent=btn.dataset.bio||'';
-      document.getElementById('cqDetailTeaching').textContent=btn.dataset.teaching||'';
-      detail.scrollIntoView({behavior:'smooth',block:'center'});
-    }));
-  }
-  const filters=document.querySelectorAll('.cq-album-filter');
-  const cells=document.querySelectorAll('.cq-album-cell');
-  filters.forEach(button=>button.addEventListener('click',()=>{
-    filters.forEach(x=>x.classList.remove('active'));
-    button.classList.add('active');
-    const wanted=(button.dataset.filter||'').toLocaleLowerCase('pt-BR');
-    cells.forEach(cell=>{const category=(cell.dataset.category||'').toLocaleLowerCase('pt-BR');cell.hidden=wanted!==''&&!category.includes(wanted);});
+(() => {
+  const cards = <?= json_encode($details, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>;
+  const grid = document.getElementById('cqAlbumGrid');
+  if (!grid) return;
+
+  const cells = [...grid.querySelectorAll('.cq-album-cell')];
+  const search = document.getElementById('cqAlbumSearch');
+  const filters = [...document.querySelectorAll('[data-album-state]')];
+  let state = '';
+
+  const apply = () => {
+    const query = (search?.value || '').trim().toLocaleLowerCase('pt-BR');
+    cells.forEach(cell => {
+      const stateOk = state === '' || cell.dataset.state === state;
+      const searchOk = query === '' || (cell.dataset.search || '').includes(query);
+      cell.hidden = !(stateOk && searchOk);
+    });
+  };
+
+  search?.addEventListener('input', apply);
+  filters.forEach(button => button.addEventListener('click', () => {
+    state = button.dataset.albumState || '';
+    filters.forEach(item => item.setAttribute('aria-pressed', item === button ? 'true' : 'false'));
+    apply();
   }));
-});
+
+  const detail = document.getElementById('cqSaintDetail');
+  const stateText = card => {
+    if (card.state === 'illuminated') return '✦ Edição iluminada';
+    if (card.state === 'repeated') return 'Repetida · ×' + Math.max(2, card.normalQuantity);
+    return '✓ Coletada';
+  };
+
+  document.querySelectorAll('[data-open-saint]').forEach(button => button.addEventListener('click', () => {
+    const card = cards[button.dataset.openSaint || ''];
+    if (!card || !detail) return;
+    document.getElementById('cqDetailImage').src = card.image;
+    document.getElementById('cqDetailImage').alt = card.name;
+    document.getElementById('cqDetailCategory').textContent = card.category + ' · Carta ' + String(card.number).padStart(2,'0');
+    document.getElementById('cqDetailName').textContent = card.name;
+    document.getElementById('cqDetailBio').textContent = card.bio;
+    document.getElementById('cqDetailTeaching').textContent = card.teaching;
+    document.getElementById('cqDetailState').textContent = stateText(card);
+    detail.scrollIntoView({behavior:'smooth',block:'center'});
+  }));
+
+  <?php if ($firstOwned): ?>
+  const first = cards[<?= json_encode((string)$firstOwned['slug'], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>];
+  if (first && document.getElementById('cqDetailState')) document.getElementById('cqDetailState').textContent = stateText(first);
+  <?php endif; ?>
+})();
 </script>
-<style>.cq-album-filter{border:1px solid #e0d0bb;cursor:pointer}.cq-album-filter.active{background:#0d3a4a;color:#fff;border-color:#0d3a4a}</style>
