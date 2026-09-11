@@ -156,6 +156,7 @@ jobs:
             public/js/crismaquest-saint-avatars.js \
             src/Service/CrismaQuestBootstrapService.php \
             public/views/studenti/classDashboard.php \
+            public/views/layouts/mainStudLayout.php \
             src/Service/StudentDashboardService.php
           do
             echo "Uploading $file"
