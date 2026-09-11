@@ -1,0 +1,164 @@
+name: Repair approved saint images now
+
+on:
+  push:
+    branches:
+      - feature/crismaquest-auth-final
+    paths:
+      - .github/workflows/repair-approved-saints-now.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crismaquest-approved-saints-now
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout production branch
+        uses: actions/checkout@v6
+        with:
+          ref: feature/crismaquest-auth-final
+
+      - name: Install Pillow
+        run: python3 -m pip install --quiet pillow
+
+      - name: Fetch exact approved images and update catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import hashlib, html, io, json, re, urllib.request
+          from pathlib import Path
+          from PIL import Image
+
+          root = Path(".")
+          out_dir = root / "public/assets/crismaquest/saints"
+          out_dir.mkdir(parents=True, exist_ok=True)
+
+          headers = {"User-Agent": "Mozilla/5.0 CrismaQuest/1.0"}
+
+          def fetch(url):
+              req = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return r.read(), r.headers.get_content_type()
+
+          def save_jpeg(raw, target):
+              im = Image.open(io.BytesIO(raw)).convert("RGB")
+              im.save(target, "JPEG", quality=92, optimize=True, progressive=True)
+              return target.read_bytes()
+
+          # São José: exact artwork supplied/approved by the administrator.
+          jose_direct = "https://i.pinimg.com/originals/69/12/8f/69128febe1254aa86b6f6f77527f961a.png"
+          jose_raw, _ = fetch(jose_direct)
+          jose_path = out_dir / "sao-jose-user.jpg"
+          jose_bytes = save_jpeg(jose_raw, jose_path)
+
+          # São Francisco: exact artwork from the Seminary page supplied by the administrator.
+          francisco_page = "https://seminariodiamantina.org.br/oracao-de-sao-francisco/"
+          page_raw, _ = fetch(francisco_page)
+          page = page_raw.decode("utf-8", "ignore")
+
+          patterns = [
+              r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+              r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+              r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+              r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image["\']',
+          ]
+          francisco_direct = None
+          for pat in patterns:
+              m = re.search(pat, page, re.I)
+              if m:
+                  francisco_direct = html.unescape(m.group(1))
+                  break
+          if not francisco_direct:
+              # Prefer an image in the article body rather than site chrome.
+              article = re.search(r'<article[^>]*>(.*?)</article>', page, re.I | re.S)
+              source = article.group(1) if article else page
+              imgs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', source, re.I)
+              if not imgs:
+                  raise RuntimeError("Could not locate São Francisco image on supplied Seminary page")
+              francisco_direct = html.unescape(imgs[0])
+
+          francisco_raw, _ = fetch(francisco_direct)
+          francisco_path = out_dir / "sao-francisco-assis-user.jpg"
+          francisco_bytes = save_jpeg(francisco_raw, francisco_path)
+
+          catalog_path = root / "config/crismaquest/saints.json"
+          saints = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+          by_slug = {s["slug"]: s for s in saints}
+
+          francisco = by_slug["sao-francisco-assis"]
+          francisco.update({
+              "image_kind": "Pintura",
+              "image_url": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg?v=20260911j",
+              "image_path": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg?v=20260911j",
+              "fallback_image_path": "/assets/crismaquest/saints/sao-francisco-assis-user.jpg",
+              "source_url": francisco_page,
+              "credit": "Imagem indicada pelo administrador · Seminário Provincial Sagrado Coração de Jesus",
+              "license": "Imagem indicada pelo administrador para uso no CrismaQuest",
+              "license_url": francisco_page,
+              "source_description": "Imagem de São Francisco usada na página Oração de São Francisco do Seminário Provincial Sagrado Coração de Jesus.",
+              "selection_policy": "imagem exata indicada pelo administrador do CrismaQuest",
+              "sha256": hashlib.sha256(francisco_bytes).hexdigest(),
+              "bytes": len(francisco_bytes),
+          })
+
+          jose = by_slug["sao-jose"]
+          jose.update({
+              "image_kind": "Pintura",
+              "image_url": "/assets/crismaquest/saints/sao-jose-user.jpg?v=20260911j",
+              "image_path": "/assets/crismaquest/saints/sao-jose-user.jpg?v=20260911j",
+              "fallback_image_path": "/assets/crismaquest/saints/sao-jose-user.jpg",
+              "source_url": "https://br.pinterest.com/pin/1019713540637674590/",
+              "credit": "Imagem indicada e fornecida pelo administrador do CrismaQuest",
+              "license": "Imagem indicada pelo administrador para uso no CrismaQuest",
+              "license_url": "https://br.pinterest.com/pin/1019713540637674590/",
+              "source_description": "São José com o Menino Jesus adormecido e lírios; imagem exata indicada pelo administrador.",
+              "selection_policy": "imagem exata indicada pelo administrador do CrismaQuest",
+              "sha256": hashlib.sha256(jose_bytes).hexdigest(),
+              "bytes": len(jose_bytes),
+          })
+
+          catalog_path.write_text(
+              json.dumps(saints, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+
+          print("Francisco source:", francisco_direct)
+          print("Francisco bytes:", len(francisco_bytes))
+          print("José bytes:", len(jose_bytes))
+          PY
+
+      - name: Upload only corrected assets to production
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for file in             public/assets/crismaquest/saints/sao-francisco-assis-user.jpg             public/assets/crismaquest/saints/sao-jose-user.jpg             config/crismaquest/saints.json
+          do
+            echo "Uploading $file"
+            curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs               --user "${FTP_USER}:${FTP_PASS}"               --upload-file "$file"               "ftp://ftpupload.net/htdocs/$file"
+          done
+
+      - name: Persist approved images in repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "CrismaQuest Repair"
+          git config user.email "actions@users.noreply.github.com"
+          git add             public/assets/crismaquest/saints/sao-francisco-assis-user.jpg             public/assets/crismaquest/saints/sao-jose-user.jpg             config/crismaquest/saints.json
+          if git diff --cached --quiet; then
+            echo "No repository changes to persist."
+          else
+            git commit -m "Fix approved São Francisco and São José images [skip ci]"
+            git push origin HEAD:feature/crismaquest-auth-final
+          fi
