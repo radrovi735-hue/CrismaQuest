@@ -17,6 +17,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  repair_visuals_now:
+    if: ${{ contains(github.event.head_commit.message, '[repair-visuals]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Upload only Francisco, José and saint catalogue
+        shell: bash
+        env:
+          FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for file in \
+            public/assets/crismaquest/saints/sao-francisco-assis-user.jpg \
+            public/assets/crismaquest/saints/sao-jose-user.jpg \
+            config/crismaquest/saints.json
+          do
+            curl --silent --show-error --fail --retry 3 --retry-delay 1 --ftp-create-dirs \
+              --user "${FTP_USER}:${FTP_PASS}" \
+              --upload-file "$file" \
+              "ftp://ftpupload.net/htdocs/$file"
+          done
+
   validate:
     uses: ./.github/workflows/crismaquest-ci.yml
   deploy:
