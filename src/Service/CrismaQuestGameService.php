@@ -295,6 +295,10 @@ final class CrismaQuestGameService
             $stmt->execute(['id'=>$chestId]);
             $chest = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$chest) throw new RuntimeException('Baú indisponível.');
+            // Compatibilidade com instalações anteriores ao catálogo final de cosméticos.
+            if (($chest['slug'] ?? '') === 'envio' && ($chest['cosmetic_slug'] ?? '') === 'tema-caminho') {
+                $chest['cosmetic_slug'] = 'tema-padroeiros';
+            }
             if ($xp < (int)$chest['threshold_xp']) throw new RuntimeException('Você ainda não alcançou o XP necessário.');
 
             $insert = $pdo->prepare('INSERT IGNORE INTO cq_user_chests (user_id,chest_id,result_json) VALUES (:u,:c,NULL)');
