@@ -17,7 +17,7 @@
     "image_path": "https://www.ctsbooks.org/wp-content/uploads/2025/10/St-Carlo-Acutis-Prayer-Card-1.png.webp",
     "sha256": "83d8de0f7578488dbfedfc523241c15c5da0bee5e6c075012233fe28b28ab148",
     "bytes": 15009,
-    "fallback_image_path": "/assets/crismaquest/saints/sao-carlo-acutis-user.jpg?v=20260911f",
+    "fallback_image_path": "/assets/crismaquest/saints/sao-carlo-acutis-user.jpg",
     "selection_policy": "imagem exata indicada pelo administrador do CrismaQuest"
   },
   {
