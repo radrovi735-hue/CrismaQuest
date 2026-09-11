@@ -9,7 +9,7 @@ use Throwable;
 /** Instala, atualiza e saneia as extensões próprias do CrismaQuest de forma idempotente. */
 class CrismaQuestBootstrapService
 {
-    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v8';
+    private const LOCK_NAME = 'crismaquest_schema_bootstrap_v9';
 
     public static function ensureInstalled(): void
     {
@@ -57,11 +57,23 @@ class CrismaQuestBootstrapService
             );
             if ((int)$tables->fetchColumn() !== 2) return;
 
-            $current = (string)($pdo->query(
-                "SELECT image_path FROM cq_saint_cards WHERE card_number=1 LIMIT 1"
-            )->fetchColumn() ?: '');
-            $expected = 'https://www.vaticannews.va/content/dam/vaticannews/multimedia/2024/maggio/24/Carlo-Acutis.jpg/_jcr_content/renditions/cq5dam.thumbnail.cropped.750.422.jpeg';
-            if ($current === $expected) return;
+            $expected = [
+                'sao-francisco-assis' => '/assets/crismaquest/saints/sao-francisco-assis-user.jpg',
+                'sao-jose' => '/assets/crismaquest/saints/sao-jose-user.jpg',
+            ];
+            $stmt = $pdo->query(
+                "SELECT slug,image_path
+                 FROM cq_saint_cards
+                 WHERE slug IN ('sao-francisco-assis','sao-jose')"
+            );
+            $current = [];
+            foreach (($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
+                $current[(string)$row['slug']] = (string)$row['image_path'];
+            }
+            if (($current['sao-francisco-assis'] ?? '') === $expected['sao-francisco-assis']
+                && ($current['sao-jose'] ?? '') === $expected['sao-jose']) {
+                return;
+            }
 
             self::importSqlFile($pdo, dirname(__DIR__,2).'/sql/crismaquest/002_saints_seed.sql');
         } catch (Throwable) {
