@@ -59,7 +59,7 @@ class CrismaQuestBootstrapService
             $current = (string)($pdo->query(
                 "SELECT image_path FROM cq_saint_cards WHERE card_number=1 LIMIT 1"
             )->fetchColumn() ?: '');
-            $expected = 'https://commons.wikimedia.org/wiki/Special:Redirect/file/San%20Publije%20Malta%20(1).jpg';
+            $expected = 'https://www.vaticannews.va/content/dam/vaticannews/multimedia/2024/maggio/24/Carlo-Acutis.jpg/_jcr_content/renditions/cq5dam.thumbnail.cropped.750.422.jpeg';
             if ($current === $expected) return;
 
             self::importSqlFile($pdo, dirname(__DIR__,2).'/sql/crismaquest/002_saints_seed.sql');
