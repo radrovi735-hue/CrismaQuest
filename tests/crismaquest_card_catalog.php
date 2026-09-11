@@ -71,10 +71,10 @@ assertCardCatalog(
 assertCardCatalog((int)$staleCarlo['quantity'] === 1, 'enriquecimento preserva dados do aluno');
 
 $approved = [
-    'sao-francisco-assis'=>'/assets/crismaquest/saints/sao-francisco-assis-user.jpg?v=20260911f',
+    'sao-francisco-assis'=>'/assets/crismaquest/saints/sao-francisco-assis-user.jpg?v=20260911g',
     'sao-carlo-acutis'=>'https://www.ctsbooks.org/wp-content/uploads/2025/10/St-Carlo-Acutis-Prayer-Card-1.png.webp',
     'sao-jeronimo'=>'/assets/crismaquest/saints/sao-jeronimo-user.jpg?v=20260911f',
-    'sao-jose'=>'/assets/crismaquest/saints/sao-jose-user.jpg?v=20260911f',
+    'sao-jose'=>'/assets/crismaquest/saints/sao-jose-user.jpg?v=20260911g',
 ];
 foreach ($approved as $slug=>$path) {
     $card = array_values(array_filter($cards, static fn(array $item): bool => $item['slug'] === $slug))[0] ?? null;
