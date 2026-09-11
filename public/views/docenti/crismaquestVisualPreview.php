@@ -12,7 +12,7 @@ $base='/docenti/jogo/visual?lote='.$batch;
     <p class="cq-preview-caption">Prévia responsiva · 390 × 844 px</p><iframe class="cq-preview-phone" src="<?= $base ?>&amp;frame=1" title="Álbum em largura de celular"></iframe>
   <?php else: ?>
   <section class="cq-collection-hero"><div><div class="cq-collection-eyebrow">Álbum dos Santos · Prévia do catequista</div><h1>Vidas que iluminam<br>o caminho.</h1><p><?= $batch==='album'?'40 testemunhos, uma mesma identidade visual.':'Fotografia, pintura e ícone religioso.' ?> Cada obra permanece inteira, com suas cores e proporções originais.</p></div><?php if($batch==='album'): ?><div class="cq-preview-count"><strong>40</strong><span>cartas verificadas</span></div><?php endif; ?></section>
-  <?php if($batch==='exemplos')$cards=array_values(array_filter($cards,static fn($card)=>in_array($card['slug'],['santa-teresinha-menino-jesus','sao-francisco-assis','sao-pedro'],true))); ?>
+  <?php if($batch==='exemplos')$cards=array_values(array_filter($cards,static fn($card)=>in_array($card['slug'],['santa-teresinha-menino-jesus','sao-francisco-assis','santo-inacio-antioquia'],true))); ?>
   <div class="cq-collection-grid <?= $batch==='exemplos'?'cq-preview-three':'cq-preview-all' ?>">
     <?php foreach ($cards as $card): $card['quantity']=1; ?>
     <div><?php require __DIR__.'/../components/saintCard.php'; ?><p class="cq-preview-source"><?= $cqPreviewEscape($card['image_kind']) ?> · <a href="<?= $cqPreviewEscape($card['source_url']) ?>" target="_blank" rel="noopener">Fonte da imagem</a></p></div>
