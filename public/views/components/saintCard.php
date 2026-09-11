@@ -1,13 +1,22 @@
 <?php
 /* A obra e a moldura são camadas separadas. Nunca recortar, filtrar ou retocar a imagem. */
 $cqEsc = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
-$cqOwned = (int)($card['quantity'] ?? 0) > 0 || (int)($card['illuminated_quantity'] ?? 0) > 0;
-$cqLit = ($card['display_edition'] ?? 'normal') === 'illuminated';
-$cqQuantity = (int)($cqLit ? ($card['illuminated_quantity'] ?? 0) : ($card['quantity'] ?? 0));
+$cqNormalQuantity = (int)($card['quantity'] ?? 0);
+$cqIlluminatedQuantity = (int)($card['illuminated_quantity'] ?? 0);
+$cqOwned = $cqNormalQuantity > 0 || $cqIlluminatedQuantity > 0;
+$cqState = (string)($card['collection_state'] ?? ($cqOwned ? ($cqIlluminatedQuantity > 0 ? 'illuminated' : ($cqNormalQuantity > 1 ? 'repeated' : 'collected')) : 'locked'));
+$cqLit = $cqState === 'illuminated' || ($card['display_edition'] ?? 'normal') === 'illuminated';
+$cqQuantity = $cqLit ? $cqIlluminatedQuantity : $cqNormalQuantity;
 $cqNumber = str_pad((string)($card['card_number'] ?? 0), 2, '0', STR_PAD_LEFT);
 $cqImage = $card['image_path'] ?? $card['image_url'] ?? '';
+$cqStateLabel = match ($cqState) {
+    'illuminated' => '✦ Iluminada' . ($cqQuantity > 1 ? ' · ×'.$cqQuantity : ''),
+    'repeated' => 'Repetida · ×'.max(2, $cqQuantity),
+    'collected' => '✓ Coletada',
+    default => 'Por conquistar',
+};
 ?>
-<article class="cq-saint-card <?= $cqOwned ? 'is-collected' : 'is-locked' ?> <?= $cqLit ? 'is-illuminated' : '' ?>" data-saint="<?= $cqEsc($card['slug']) ?>">
+<article class="cq-saint-card <?= $cqOwned ? 'is-collected' : 'is-locked' ?> <?= $cqLit ? 'is-illuminated' : '' ?>" data-saint="<?= $cqEsc($card['slug']) ?>" data-state="<?= $cqEsc($cqState) ?>">
   <div class="cq-saint-frame">
     <div class="cq-saint-serial"><span>CRISMAQUEST</span><span>Nº <?= $cqNumber ?></span></div>
     <div class="cq-saint-window">
@@ -24,7 +33,7 @@ $cqImage = $card['image_path'] ?? $card['image_url'] ?? '';
     </div>
   </div>
   <div class="cq-saint-card-footer">
-    <span class="cq-collection-state <?= $cqQuantity > 1 ? 'is-duplicate' : '' ?>"><?= !$cqOwned ? 'Por conquistar' : ($cqQuantity > 1 ? 'Repetida · ×'.$cqQuantity : '✓ Coletada') ?></span>
+    <span class="cq-collection-state <?= $cqState === 'repeated' ? 'is-duplicate' : '' ?>"><?= $cqEsc($cqStateLabel) ?></span>
     <?php if ($cqOwned): ?><button type="button" class="cq-saint-open" data-open-saint="<?= $cqEsc($card['slug']) ?>" aria-label="Conhecer <?= $cqEsc($card['name']) ?>">Conhecer <span aria-hidden="true">↗</span></button><?php endif; ?>
   </div>
 </article>
