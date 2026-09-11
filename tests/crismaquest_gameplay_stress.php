@@ -247,7 +247,18 @@ ok(!($r['success'] ?? false), 'baú não abre duas vezes');
 ok((int)$pdo->query('SELECT COUNT(*) FROM cq_journey_steps WHERE active=1')->fetchColumn() === 22, '22 etapas');
 ok((int)$pdo->query('SELECT COUNT(*) FROM cq_missions WHERE active=1')->fetchColumn() >= 56, '56 missões');
 ok((int)$pdo->query('SELECT COUNT(*) FROM cq_daily_sparks WHERE active=1')->fetchColumn() === 60, '60 Centelhas');
+ok((int)$pdo->query('SELECT COUNT(*) FROM cq_saint_cards WHERE active=1')->fetchColumn() === 40, '40 santos ativos no álbum');
+ok((int)$pdo->query('SELECT COUNT(*) FROM cq_card_editions WHERE edition_type="normal" AND active=1')->fetchColumn() === 40, '40 edições normais ativas');
+
+$illuminatedOne = (new CrismaQuestRewardService())->grantIlluminatedCard($pdo, $uid103, 'stress-illuminated-1');
+$illuminatedTwo = (new CrismaQuestRewardService())->grantIlluminatedCard($pdo, $uid103, 'stress-illuminated-2');
+ok($illuminatedOne !== null && $illuminatedTwo !== null, 'recompensas iluminadas são entregues');
+ok($illuminatedOne['slug'] !== $illuminatedTwo['slug'], 'edições iluminadas não repetem santo enquanto há alternativa');
+
 ok((int)$pdo->query('SELECT COUNT(*) FROM cq_badge_catalog WHERE active=1')->fetchColumn() === 14, '14 conquistas');
 ok((int)$pdo->query('SELECT COUNT(*) FROM cq_chest_catalog WHERE active=1')->fetchColumn() === 9, '9 baús');
+ok((int)$pdo->query('SELECT COUNT(*) FROM cq_gift_catalog WHERE active=1')->fetchColumn() === 17, '17 presentes e cosméticos ativos');
+$finalTheme = (string)$pdo->query('SELECT cosmetic_slug FROM cq_chest_catalog WHERE slug="envio"')->fetchColumn();
+ok($finalTheme === 'tema-padroeiros', 'Baú Envio aponta para um tema ativo');
 
 fwrite(STDOUT, "PASS: CrismaQuest gameplay stress + trajectories\n");
