@@ -1,5 +1,5 @@
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -8,16 +8,12 @@ const cards = JSON.parse(await readFile(join(root, 'config/crismaquest/saints.js
 const css = await readFile(join(root, 'public/css/crismaquest-collection.css'), 'utf8');
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]);
 
-await mkdir(join(destination, 'images'), { recursive: true });
-for (const card of cards) {
-  await copyFile(join(root, 'public', card.image_path), join(destination, 'images', basename(card.image_path)));
-}
 
 const cardMarkup = cards.map((card) => `
 <article class="cq-saint-card is-collected" data-saint="${escape(card.slug)}">
   <div class="cq-saint-frame">
     <div class="cq-saint-serial"><span>CRISMAQUEST</span><span>Nº ${String(card.card_number).padStart(2, '0')}</span></div>
-    <div class="cq-saint-window"><img src="images/${escape(basename(card.image_path))}" alt="${escape(card.name)}" loading="eager"></div>
+    <div class="cq-saint-window"><img src="${escape(card.image_path)}" alt="${escape(card.name)}" loading="eager" referrerpolicy="no-referrer"></div>
     <div class="cq-saint-nameplate"><span class="cq-saint-category">${escape(card.category)}</span><h3>${escape(card.name)}</h3><span class="cq-saint-edition">Edição da Jornada</span></div>
   </div>
   <div class="cq-saint-card-footer"><span class="cq-collection-state">✓ Coletada</span><span class="qa-source">${escape(card.image_kind)}</span></div>
