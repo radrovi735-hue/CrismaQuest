@@ -85,7 +85,7 @@ final class CrismaQuestHomeService
 
         try {
             $stmt = Database::getConnection()->prepare(
-                'SELECT sc.name, sc.short_bio, sc.short_teaching, sc.image_path,
+                'SELECT sc.slug, sc.name, sc.short_bio, sc.short_teaching, sc.image_path,
                         ce.edition_type, uc.quantity
                  FROM cq_user_cards uc
                  JOIN cq_card_editions ce ON ce.id = uc.card_edition_id
