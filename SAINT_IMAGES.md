@@ -9,7 +9,7 @@ Política visual: o CrismaQuest não gera nem redesenha rostos de santos por IA.
 | São Carlo Acutis | `St. Carlo Acutis.jpg` | CC BY-SA 4.0; fotografia de imagem devocional/estátua |
 | Santa Teresinha do Menino Jesus | `Teresa-de-Lisieux.jpg` | fotografia de 15/04/1895; domínio público |
 | São Francisco de Assis | `Francis of Assisi - Cimabue.jpg` | obra histórica; domínio público |
-| São Pedro | `Saint Peter A26043.jpg` | obra histórica; domínio público |
+| São Pedro | `Petersinai.jpg` | ícone encáustico do Mosteiro de Santa Catarina, Sinai, século VII; domínio público |
 | Santa Faustina Kowalska | `Faustyna Kowalska.png` | fotografia anterior a 1938; domínio público conforme Commons |
 | São João Paulo II | `JohannesPaul2-portrait.jpg` | fotografia de 1993; domínio público (obra do Governo Federal dos EUA) |
 | Santa Gianna Beretta Molla | `Gianna Beretta Molla (cropped).jpg` | fotografia anterior a 1962; domínio público conforme Commons |

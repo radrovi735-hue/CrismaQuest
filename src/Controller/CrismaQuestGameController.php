@@ -124,9 +124,10 @@ final class CrismaQuestGameController
         $frame = ($_GET['frame'] ?? '') === '1';
         View::render('docenti/crismaquestVisualPreview', [
             'cards'=>\App\Service\CrismaQuestSaintCatalog::all(),
+            'batch'=>($_GET['lote'] ?? '') === 'album' ? 'album' : 'exemplos',
             'phone'=>!$frame && ($_GET['phone'] ?? '') === '1',
             'embedded'=>$frame,
-            'pageStyles'=>['/css/crismaquest-app.css','/css/crismaquest-collection.css?v=20260911a'],
+            'pageStyles'=>['/css/crismaquest-app.css','/css/crismaquest-collection.css?v=20260911b'],
             'useMathJax'=>false,
         ], $frame ? 'crismaquestVisualPreviewLayout' : 'mainDocLayout');
     }
