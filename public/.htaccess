@@ -1,4 +1,4 @@
-RewriteEngine On
+AddType application/manifest+json .webmanifest\nRewriteEngine On
 
 # Se il file o cartella esiste, lo serve normalmente
 RewriteCond %{REQUEST_FILENAME} !-f

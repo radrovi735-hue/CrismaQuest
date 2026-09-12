@@ -98,6 +98,12 @@ jobs:
             public/views/studenti/crismaquestSocial.php \
             public/views/studenti/badge/index.php \
             public/js/crismaquest-saint-avatars.js \
+            public/views/layouts/loginDocLayout.php \
+            public/views/layouts/mainDocLayout.php \
+            public/views/layouts/loginStudLayout.php \
+            public/js/crismaquest-pwa.js \
+            public/service-worker.js \
+            public/manifest.webmanifest \
             public/assets/fontawesome-7.2/css/all.min.css \
             public/assets/bootstrap-5.3.8/css/bootstrap.min.css \
             public/assets/bootstrap-5.3.8/js/bootstrap.bundle.min.js \
