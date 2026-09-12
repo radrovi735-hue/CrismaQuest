@@ -102,5 +102,5 @@ window.CQ = {
         <script src="<?= htmlspecialchars($script) ?>"></script>
     <?php endforeach; ?>
 <?php endif; ?>
-<script src="/js/crismaquest-pwa.js?v=1"></script>\n</body>
+<script src="/js/crismaquest-pwa.js?v=20260912b"></script>\n</body>
 </html>
