@@ -32,5 +32,5 @@ $translator = new TranslationService();
     <?= $content ?>
     <script src="/assets/jquery/jquery.min.js"></script>
     <script src="/assets/bootstrap-5.3.8/js/bootstrap.bundle.min.js"></script>
-<script src="/js/crismaquest-pwa.js?v=1"></script>\n</body>
+<script src="/js/crismaquest-pwa.js?v=20260912b"></script>\n</body>
 </html>
