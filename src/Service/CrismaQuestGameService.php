@@ -547,6 +547,15 @@ final class CrismaQuestGameService
         );
         $pauses->execute(['c'=>$classId]);
 
+        $rewardCards = $pdo->query(
+            'SELECT DISTINCT sc.slug, sc.name, sc.card_number
+             FROM cq_saint_cards sc
+             JOIN cq_card_editions ce
+               ON ce.card_id=sc.id AND ce.edition_type="normal" AND ce.active=1
+             WHERE sc.active=1
+             ORDER BY sc.card_number'
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
         return [
             'ok'=>true,
             'permissionStatus'=>PermissionService::STATUS_OK,
@@ -554,6 +563,7 @@ final class CrismaQuestGameService
             'studentCount'=>(int)$students->fetchColumn(),
             'missions'=>$missions->fetchAll(PDO::FETCH_ASSOC) ?: [],
             'students'=>$this->classmates($pdo,$classId,0),
+            'rewardCards'=>$rewardCards,
             'pauses'=>$pauses->fetchAll(PDO::FETCH_ASSOC) ?: [],
             'levels'=>$pdo->query('SELECT * FROM cq_game_levels ORDER BY level_no')->fetchAll(PDO::FETCH_ASSOC) ?: [],
         ];
@@ -678,6 +688,108 @@ final class CrismaQuestGameService
             'id'=>$missionId,
         ]);
         return $this->success('Missão atualizada.');
+    }
+
+    public function awardCards(array $input): array
+    {
+        $ctx = $this->teacherContext();
+        if (!($ctx['ok'] ?? false)) return $this->error('Acesso restrito aos catequistas.');
+
+        $rawIds = $input['user_ids'] ?? [];
+        if (!is_array($rawIds)) $rawIds = [];
+        $userIds = array_values(array_unique(array_filter(
+            array_map('intval', $rawIds),
+            static fn(int $id): bool => $id > 0
+        )));
+
+        if ($userIds === []) return $this->error('Selecione pelo menos um crismando.');
+        if (count($userIds) > 60) return $this->error('Seleção grande demais para uma única entrega.');
+
+        $choice = trim((string)($input['card_choice'] ?? '__random_new__'));
+        $reason = mb_substr(trim((string)($input['reason'] ?? '')), 0, 180);
+        $pdo = Database::getConnection();
+
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $memberCheck = $pdo->prepare(
+            'SELECT DISTINCT s.fk_utente
+             FROM ct_studenti s
+             JOIN ct_studenti_classi sc ON sc.fk_studente=s.id_studente
+             WHERE sc.fk_classe=? AND s.fk_utente IN (' . $placeholders . ')'
+        );
+        $memberCheck->execute(array_merge([$ctx['classId']], $userIds));
+        $validIds = array_map('intval', $memberCheck->fetchAll(PDO::FETCH_COLUMN) ?: []);
+        sort($validIds);
+        $expectedIds = $userIds;
+        sort($expectedIds);
+        if ($validIds !== $expectedIds) {
+            return $this->error('Há um crismando inválido na seleção. Recarregue a página.');
+        }
+
+        $saintSlug = null;
+        if ($choice !== '__random_new__') {
+            $cardCheck = $pdo->prepare(
+                'SELECT sc.slug
+                 FROM cq_saint_cards sc
+                 JOIN cq_card_editions ce
+                   ON ce.card_id=sc.id AND ce.edition_type="normal" AND ce.active=1
+                 WHERE sc.slug=:slug AND sc.active=1
+                 LIMIT 1'
+            );
+            $cardCheck->execute(['slug'=>$choice]);
+            $saintSlug = $cardCheck->fetchColumn();
+            if ($saintSlug === false) return $this->error('Carta escolhida não está disponível.');
+            $saintSlug = (string)$saintSlug;
+        }
+
+        $batch = date('YmdHis') . '-' . substr(
+            hash('sha256', $ctx['userId'] . ':' . microtime(true) . ':' . implode(',', $userIds)),
+            0,
+            10
+        );
+
+        try {
+            $pdo->beginTransaction();
+            $delivered = 0;
+
+            foreach ($userIds as $userId) {
+                $rewardKey = 'teacher-recognition-' . $batch . '-' . $userId;
+                $card = $this->rewards->grantCard(
+                    $pdo,
+                    $userId,
+                    $rewardKey,
+                    $saintSlug,
+                    true,
+                    'normal'
+                );
+
+                if (!$card) {
+                    throw new RuntimeException('Não foi possível entregar uma das cartas.');
+                }
+
+                if ($reason !== '') {
+                    $pdo->prepare(
+                        'UPDATE cq_reward_events
+                         SET description=:d
+                         WHERE user_id=:u AND reward_key=:k'
+                    )->execute([
+                        'd'=>mb_substr('Reconhecimento da catequese: ' . $reason, 0, 255),
+                        'u'=>$userId,
+                        'k'=>'card:' . $rewardKey,
+                    ]);
+                }
+
+                $delivered++;
+            }
+
+            $pdo->commit();
+
+            $label = $delivered === 1 ? '1 crismando recebeu uma carta.' : $delivered . ' crismandos receberam uma carta.';
+            if ($saintSlug === null) $label .= ' Foi priorizada uma carta nova para cada um.';
+            return $this->success($label);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            return $this->error($e->getMessage() ?: 'Não foi possível entregar as cartas.');
+        }
     }
 
     public function pauseStudent(int $userId, string $startDate, string $endDate, string $reason): array

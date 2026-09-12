@@ -16,6 +16,50 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   </div>
 </div>
 
+<details class="cq-teacher-panel cq-admin-fold"><summary>Premiar crismandos com carta</summary><div class="cq-admin-fold-body">
+  <div class="cq-game-kicker">Reconhecimento da catequese</div>
+  <h2>Entregar carta a alguns crismandos</h2>
+  <p>Selecione somente quem deve receber. A opção aleatória prioriza uma carta que cada crismando ainda não possui.</p>
+  <form method="post" action="/docenti/jogo/premiar-carta">
+    <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
+
+    <div class="mb-3">
+      <strong class="d-block mb-2">1. Selecione os crismandos</strong>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-2">
+        <?php foreach (($students ?? []) as $s): ?>
+          <div class="col">
+            <label class="d-flex align-items-center gap-2 border rounded-3 px-3 py-2 bg-white h-100">
+              <input class="form-check-input m-0" type="checkbox" name="user_ids[]" value="<?= (int)$s['id_utente'] ?>">
+              <span><?= $h(trim($s['nome'].' '.$s['cognome'])) ?></span>
+            </label>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <div class="row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label"><strong>2. Carta</strong></label>
+        <select class="form-select" name="card_choice" required>
+          <option value="__random_new__">Aleatória nova para cada um — recomendado</option>
+          <?php foreach (($rewardCards ?? []) as $card): ?>
+            <option value="<?= $h($card['slug']) ?>"><?= $h($card['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label"><strong>3. Motivo opcional</strong></label>
+        <input class="form-control" type="text" name="reason" maxlength="180" placeholder="Ex.: participação no encontro, ajuda na dinâmica">
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+      <button type="submit" class="cq-game-primary">Entregar carta aos selecionados</button>
+      <small class="text-muted">A entrega vale apenas para os crismandos marcados.</small>
+    </div>
+  </form>
+</div></details>
+
 <details class="cq-teacher-panel cq-admin-fold"><summary>Criar uma nova missão</summary><div class="cq-admin-fold-body">
   <div class="cq-game-kicker">Criador rápido</div>
   <h2>Nova missão</h2>

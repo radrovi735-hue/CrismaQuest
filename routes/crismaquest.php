@@ -40,3 +40,4 @@ $router->post('/docenti/jogo/missao/nova', [CrismaQuestGameController::class, 'c
 $router->post('/docenti/jogo/missao/{id}/atualizar', [CrismaQuestGameController::class, 'updateMission']);
 $router->post('/docenti/jogo/pausa', [CrismaQuestGameController::class, 'pauseClass']);
 $router->post('/docenti/jogo/pausa-crismando', [CrismaQuestGameController::class, 'pauseStudent']);
+$router->post('/docenti/jogo/premiar-carta', [CrismaQuestGameController::class, 'awardCards']);

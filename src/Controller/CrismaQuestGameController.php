@@ -177,6 +177,12 @@ final class CrismaQuestGameController
         $this->teacherRedirect($result);
     }
 
+    public function awardCards(): void
+    {
+        $result = (new CrismaQuestGameService())->awardCards($_POST);
+        $this->teacherRedirect($result);
+    }
+
     private function studentRedirect(array $result, string $url): void
     {
         Flash::add(($result['success'] ?? false) ? 'success' : 'danger', (string)($result['message'] ?? 'Operação não concluída.'));

@@ -91,6 +91,9 @@ jobs:
             routes/crismaquest.php \
             src/Service/CrismaQuestBootstrapService.php \
             src/Service/StudentDashboardService.php \
+            public/views/docenti/crismaquestGame.php \
+            src/Controller/CrismaQuestGameController.php \
+            src/Service/CrismaQuestGameService.php \
             public/views/layouts/mainStudLayout.php \
             public/views/studenti/dashboard.php \
             public/views/studenti/classDashboard.php \
