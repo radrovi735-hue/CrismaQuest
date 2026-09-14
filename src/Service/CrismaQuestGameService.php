@@ -28,10 +28,12 @@ final class CrismaQuestGameService
         if (!($ctx['ok'] ?? false)) return $ctx;
 
         $pdo = Database::getConnection();
+        $this->normalizeDailyMissionWindows($pdo);
         $today = $this->today();
-        $missions = $this->availableMissions($pdo, $ctx['userId'], $today);
+        $missionPause = $this->isMissionPaused($pdo, $ctx['classId'], $ctx['userId'], $today);
+        $missions = $missionPause ? [] : $this->availableMissions($pdo, $ctx['userId'], $today);
         if ($step !== null) $missions = array_values(array_filter($missions, static fn(array $m): bool => (int)$m['step_no'] === $step));
-        $spark = $this->currentSpark($pdo, $ctx['userId'], $today);
+        $spark = $missionPause ? null : $this->currentSpark($pdo, $ctx['userId'], $today);
         $streak = $this->streaks->getStatus($ctx['userId']);
         $progress = $this->progressData($pdo, $ctx['userId']);
         $chests = $this->availableChests($pdo, $ctx['userId'], $ctx['studentId']);
@@ -54,6 +56,7 @@ final class CrismaQuestGameService
             'communityLight'=>$this->communityLight($pdo, $ctx['classId'], $today),
             'levels'=>$pdo->query('SELECT * FROM cq_game_levels ORDER BY level_no')->fetchAll(PDO::FETCH_ASSOC) ?: [],
             'recess'=>$this->isRecess($pdo, $today),
+            'missionPause'=>$missionPause,
         ];
     }
 
@@ -62,13 +65,16 @@ final class CrismaQuestGameService
         $ctx = $this->teacherContext();
         if (!($ctx['ok'] ?? false)) return $ctx;
         $pdo = Database::getConnection();
+        $this->normalizeDailyMissionWindows($pdo);
         $today = $this->today();
+        $missionPause = $this->isMissionPaused($pdo, $ctx['classId'], 0, $today);
         return ['preview'=>true,'permissionStatus'=>PermissionService::STATUS_OK,
             'student'=>['nome'=>'Prévia do crismando','cognome'=>''],
             'today'=>$today,'xp'=>0,'balance'=>0,'streak'=>['current'=>0,'longest'=>0],
             'progress'=>['completedSteps'=>0,'completedMissions'=>0],
-            'missions'=>$this->availableMissions($pdo,0,$today),
-            'spark'=>$this->currentSpark($pdo,0,$today),'recess'=>$this->isRecess($pdo,$today),
+            'missions'=>$missionPause ? [] : $this->availableMissions($pdo,0,$today),
+            'spark'=>$missionPause ? null : $this->currentSpark($pdo,0,$today),
+            'recess'=>$this->isRecess($pdo,$today),'missionPause'=>$missionPause,
             'chests'=>[],'badges'=>[],'intercessions'=>[],'classmates'=>[],
             'rosary'=>['cost'=>90,'available'=>false]];
     }
@@ -80,15 +86,21 @@ final class CrismaQuestGameService
         if ($missionId <= 0) return $this->error('Missão inválida.');
 
         $pdo = Database::getConnection();
+        $this->normalizeDailyMissionWindows($pdo);
         $today = $this->today();
+
+        if ($this->isMissionPaused($pdo, $ctx['classId'], $ctx['userId'], $today)) {
+            return $this->error('Hoje é uma pausa programada. Não há missão obrigatória.');
+        }
+
         $stmt = $pdo->prepare(
             'SELECT * FROM cq_missions
-             WHERE id=:id AND active=1 AND available_from<=:d1 AND available_until>=:d2
+             WHERE id=:id AND active=1 AND available_from=:d
              LIMIT 1'
         );
-        $stmt->execute(['id'=>$missionId,'d1'=>$today,'d2'=>$today]);
+        $stmt->execute(['id'=>$missionId,'d'=>$today]);
         $mission = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$mission) return $this->error('Esta missão ainda não está disponível.');
+        if (!$mission) return $this->error('Esta missão só pode ser realizada no dia em que é liberada.');
 
         $already = $pdo->prepare(
             'SELECT COUNT(*) FROM cq_mission_completions WHERE user_id=:u AND mission_id=:m'
@@ -204,8 +216,8 @@ final class CrismaQuestGameService
         $pdo = Database::getConnection();
         $today = $this->today();
 
-        if ($this->isRecess($pdo, $today)) {
-            return $this->error('A Chama está protegida durante o recesso. Não há Centelha obrigatória hoje.');
+        if ($this->isMissionPaused($pdo, $ctx['classId'], $ctx['userId'], $today)) {
+            return $this->error('A Chama está protegida durante a pausa programada. Não há missão diária hoje.');
         }
 
         $spark = $this->currentSpark($pdo, $ctx['userId'], $today);
@@ -522,6 +534,7 @@ final class CrismaQuestGameService
         if ($classId <= 0) return ['ok'=>false,'permissionStatus'=>PermissionService::STATUS_NO_CLASS];
 
         $pdo = Database::getConnection();
+        $this->normalizeDailyMissionWindows($pdo);
         $missions = $pdo->prepare(
             'SELECT m.*,
                (SELECT COUNT(*) FROM cq_mission_completions mc
@@ -852,17 +865,40 @@ final class CrismaQuestGameService
     {
         if ($userId <= 0) return null;
         try {
+            $ctx = $this->studentContext();
+            if (!($ctx['ok'] ?? false) || (int)$ctx['userId'] !== $userId) return null;
+
             $pdo = Database::getConnection();
-            $rows = $this->availableMissions($pdo,$userId,$this->today(),1);
-            if ($rows === []) return null;
-            $m = $rows[0];
+            $this->normalizeDailyMissionWindows($pdo);
+            $today = $this->today();
+
+            if ($this->isMissionPaused($pdo, $ctx['classId'], $ctx['userId'], $today)) {
+                return null;
+            }
+
+            $rows = $this->availableMissions($pdo,$userId,$today,1);
+            if ($rows !== []) {
+                $m = $rows[0];
+                return [
+                    'id'=>$m['id'],
+                    'title'=>$m['title'],
+                    'chapter_title'=>'Missão de hoje · Capítulo ' . (int)$m['chapter_no'],
+                    'url'=>'/studenti/missoes#missao-' . (int)$m['id'],
+                    'xp_reward'=>(int)$m['xp_reward'],
+                    'lumen_reward'=>(int)$m['lumen_reward'],
+                ];
+            }
+
+            $spark = $this->currentSpark($pdo,$userId,$today);
+            if (!$spark || (int)($spark['completed'] ?? 0) === 1) return null;
+
             return [
-                'id'=>$m['id'],
-                'title'=>$m['title'],
-                'chapter_title'=>'Capítulo ' . (int)$m['chapter_no'],
-                'url'=>'/studenti/missoes#missao-' . (int)$m['id'],
-                'xp_reward'=>(int)$m['xp_reward'],
-                'lumen_reward'=>(int)$m['lumen_reward'],
+                'id'=>'spark-' . (int)$spark['id'],
+                'title'=>(string)($spark['title'] ?? 'Centelha do dia'),
+                'chapter_title'=>'Missão diária · Centelha',
+                'url'=>'/studenti/missoes#centelha',
+                'xp_reward'=>(int)($spark['xp_reward'] ?? 0),
+                'lumen_reward'=>(int)($spark['lumen_reward'] ?? 0),
             ];
         } catch (Throwable) {
             return null;
@@ -1008,12 +1044,12 @@ final class CrismaQuestGameService
                     CASE WHEN mc.id IS NULL THEN 0 ELSE 1 END completed
              FROM cq_missions m
              LEFT JOIN cq_mission_completions mc ON mc.mission_id=m.id AND mc.user_id=:u
-             WHERE m.active=1 AND m.available_from<=:d1 AND m.available_until>=:d2
+             WHERE m.active=1 AND m.available_from=:d
                AND mc.id IS NULL
              ORDER BY m.chapter_no, COALESCE(m.step_no,99), m.sort_order';
         if ($limit !== null) $sql .= ' LIMIT ' . max(1,$limit);
         $stmt = $pdo->prepare($sql);
-        $stmt->execute(['u'=>$userId,'d1'=>$today,'d2'=>$today]);
+        $stmt->execute(['u'=>$userId,'d'=>$today]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         foreach ($rows as &$row) {
             $row['options'] = [];
@@ -1172,7 +1208,7 @@ final class CrismaQuestGameService
         $stepRaw = trim((string)($input['step_no'] ?? ''));
         $step = $stepRaw === '' ? null : (int)$stepRaw;
         $from = (string)($input['available_from'] ?? '');
-        $until = (string)($input['available_until'] ?? '');
+        $until = $from;
         $xp = max(0,min(50,(int)($input['xp_reward'] ?? 0)));
         $lumens = max(0,min(20,(int)($input['lumen_reward'] ?? 0)));
         $bonus = max(0,min(10,(int)($input['bonus_xp_correct'] ?? 0)));
@@ -1183,7 +1219,7 @@ final class CrismaQuestGameService
         if (!in_array($type,$types,true)) return ['ok'=>false,'message'=>'Tipo de missão inválido.'];
         if ($chapter < 1 || $chapter > 6) return ['ok'=>false,'message'=>'Capítulo inválido.'];
         if ($step !== null && ($step < 1 || $step > 22)) return ['ok'=>false,'message'=>'Etapa inválida.'];
-        if (!$this->validDate($from) || !$this->validDate($until) || $until < $from) return ['ok'=>false,'message'=>'Datas de publicação inválidas.'];
+        if (!$this->validDate($from)) return ['ok'=>false,'message'=>'Informe uma data válida para a missão.'];
 
         $question = trim((string)($input['question'] ?? ''));
         $feedback = trim((string)($input['feedback'] ?? ''));
@@ -1304,6 +1340,38 @@ final class CrismaQuestGameService
              WHERE sc.fk_classe=:c AND s.fk_utente=:u'
         );
         $stmt->execute(['c'=>$classId,'u'=>$recipient]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    private function normalizeDailyMissionWindows(PDO $pdo): void
+    {
+        $pdo->exec(
+            'UPDATE cq_missions
+             SET available_until=available_from
+             WHERE available_until<>available_from'
+        );
+    }
+
+    private function isMissionPaused(PDO $pdo, int $classId, int $userId, string $date): bool
+    {
+        if ($this->isRecess($pdo, $date)) return true;
+
+        $sql =
+            'SELECT COUNT(*)
+             FROM cq_streak_pauses
+             WHERE :d BETWEEN start_date AND end_date
+               AND (
+                    (scope_type="class" AND scope_id=:class_id)';
+        $params = ['d'=>$date, 'class_id'=>$classId];
+
+        if ($userId > 0) {
+            $sql .= ' OR (scope_type="user" AND scope_id=:user_id)';
+            $params['user_id'] = $userId;
+        }
+
+        $sql .= ')';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         return (int)$stmt->fetchColumn() > 0;
     }
 

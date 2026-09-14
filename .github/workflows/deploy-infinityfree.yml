@@ -89,6 +89,7 @@ jobs:
             public/index.php \
             routes/web.php \
             routes/crismaquest.php \
+            sql/crismaquest/005_gameplay_seed.sql \
             src/Service/CrismaQuestBootstrapService.php \
             src/Service/StudentDashboardService.php \
             public/views/docenti/crismaquestGame.php \

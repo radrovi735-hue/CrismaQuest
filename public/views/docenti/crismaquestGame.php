@@ -89,8 +89,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <label>XP<input type="number" name="xp_reward" min="0" max="50" value="10" required></label>
     <label>Lúmens<input type="number" name="lumen_reward" min="0" max="20" value="3" required></label>
     <label>Bônus do quiz<input type="number" name="bonus_xp_correct" min="0" max="10" value="5"></label>
-    <label>Abre em<input type="date" name="available_from" value="2026-09-10" required></label>
-    <label>Fecha em<input type="date" name="available_until" value="2027-02-09" required></label>
+    <label>Dia da missão<input type="date" name="available_from" value="2026-09-10" required></label>
     <label class="cq-builder-check"><input type="checkbox" name="active" value="1"> Publicar agora</label>
     <button type="submit" class="cq-game-primary">Criar missão</button>
   </form>
@@ -142,7 +141,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   </div>
   <div class="table-responsive">
     <table class="cq-teacher-game-table" id="cq-mission-list">
-      <thead><tr><th>Cap.</th><th>Etapa</th><th>Missão</th><th>Tipo</th><th>Recompensa</th><th>Abre</th><th>Concl.</th><th>Status</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Cap.</th><th>Etapa</th><th>Missão</th><th>Tipo</th><th>Recompensa</th><th>Dia</th><th>Concl.</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody>
       <?php foreach (($missions ?? []) as $mission): ?>
         <tr>
@@ -179,8 +178,7 @@ $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                 <label>XP<input type="number" name="xp_reward" min="0" max="50" value="<?= (int)$mission['xp_reward'] ?>" required></label>
                 <label>Lúmens<input type="number" name="lumen_reward" min="0" max="20" value="<?= (int)$mission['lumen_reward'] ?>" required></label>
                 <label>Bônus do quiz (XP)<input type="number" name="bonus_xp_correct" min="0" max="10" value="<?= (int)$mission['bonus_xp_correct'] ?>"></label>
-                <label>Abre em<input type="date" name="available_from" value="<?= $h($mission['available_from']) ?>" required></label>
-                <label>Fecha em<input type="date" name="available_until" value="<?= $h($mission['available_until']) ?>" required></label>
+                <label>Dia da missão<input type="date" name="available_from" value="<?= $h($mission['available_from']) ?>" required></label>
                 <label class="cq-builder-check"><input type="checkbox" name="active" value="1" <?= (int)$mission['active']===1?'checked':'' ?>> Missão ativa</label>
                 <button type="submit" class="cq-game-primary cq-builder-wide">Salvar</button>
               </form>

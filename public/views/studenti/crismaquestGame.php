@@ -32,15 +32,15 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
     </div>
   </section>
 
-  <?php if (!empty($recess)): ?>
+  <?php if (!empty($missionPause)): ?>
     <section class="cq-game-card cq-recess">
       <i class="fa-solid fa-shield-heart"></i>
-      <div><strong>Sua Chama está protegida durante o recesso.</strong><p>Aproveite este tempo com sua família. As missões especiais são opcionais.</p></div>
+      <div><strong>A Jornada está em pausa programada hoje.</strong><p>Sua Chama está protegida e não há missão obrigatória neste dia.</p></div>
     </section>
   <?php elseif (is_array($spark ?? null)): ?>
-    <section class="cq-game-card cq-spark">
+    <section class="cq-game-card cq-spark" id="centelha">
       <div class="cq-game-section-head">
-        <div><div class="cq-game-kicker">Centelha de hoje</div><h2><?= $h($spark['title'] ?? 'Centelha do dia') ?></h2></div>
+        <div><div class="cq-game-kicker">Missão diária · Centelha de hoje</div><h2><?= $h($spark['title'] ?? 'Centelha do dia') ?></h2></div>
         <div class="cq-reward-pills"><span>+<?= (int)($spark['xp_reward'] ?? 5) ?> XP</span><span>+<?= (int)($spark['lumen_reward'] ?? 1) ?> L</span></div>
       </div>
       <p><?= $h($spark['body'] ?? '') ?></p>
@@ -58,7 +58,7 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
   <?php endif; ?>
 
   <div class="cq-game-section-head cq-mission-heading">
-    <div><div class="cq-game-kicker">Caminho aberto</div><h2>Missões disponíveis</h2></div>
+    <div><div class="cq-game-kicker">Somente hoje</div><h2>Missões principais de hoje</h2></div>
     <span class="cq-progress-chip"><?= (int)($progress['completedMissions'] ?? 0) ?> concluídas</span>
   </div>
 
@@ -66,7 +66,7 @@ $studentName = trim((string)($student['nome'] ?? '') . ' ' . (string)($student['
     <section class="cq-game-card cq-empty-game">
       <i class="fa-solid fa-circle-check"></i>
       <h3>Tudo em dia</h3>
-      <p>Você concluiu todas as missões já liberadas. Volte quando a próxima etapa abrir.</p>
+      <p>Não há outra missão principal pendente para hoje. A missão diária é a Centelha acima.</p>
     </section>
   <?php else: ?>
     <div class="cq-missions-list">
