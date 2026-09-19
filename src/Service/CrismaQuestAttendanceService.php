@@ -104,16 +104,19 @@ final class CrismaQuestAttendanceService
                 $existing = $existingStmt->fetch(PDO::FETCH_ASSOC) ?: null;
                 $oldStatus = $existing['status'] ?? null;
                 $oldXp = (int)($existing['xp_granted'] ?? 0);
-                $newXp = $oldXp;
+                $newXp = match ($status) {
+                    'presente' => 50,
+                    'atrasado' => 15,
+                    default => 0,
+                };
+                $xpDelta = $newXp - $oldXp;
 
-                if ($status === 'presente' && $oldXp === 0) {
-                    $award = $pdo->prepare('UPDATE ct_studenti SET xp=xp+50 WHERE id_studente=:student_id');
-                    $award->execute(['student_id'=>$studentId]);
-                    $newXp = 50;
-                } elseif ($status !== 'presente' && $oldXp > 0) {
+                if ($xpDelta > 0) {
+                    $award = $pdo->prepare('UPDATE ct_studenti SET xp=xp+:xp WHERE id_studente=:student_id');
+                    $award->execute(['xp'=>$xpDelta,'student_id'=>$studentId]);
+                } elseif ($xpDelta < 0) {
                     $remove = $pdo->prepare('UPDATE ct_studenti SET xp=GREATEST(0,xp-:xp) WHERE id_studente=:student_id');
-                    $remove->execute(['xp'=>$oldXp,'student_id'=>$studentId]);
-                    $newXp = 0;
+                    $remove->execute(['xp'=>abs($xpDelta),'student_id'=>$studentId]);
                 }
 
                 $upsert = $pdo->prepare(

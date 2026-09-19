@@ -92,6 +92,7 @@ jobs:
             sql/crismaquest/005_gameplay_seed.sql \
             src/Service/CrismaQuestBootstrapService.php \
             src/Service/StudentDashboardService.php \
+            src/Service/CrismaQuestAttendanceService.php \
             public/views/docenti/crismaquestGame.php \
             src/Controller/CrismaQuestGameController.php \
             src/Service/CrismaQuestGameService.php \
