@@ -64,10 +64,14 @@ final class CrismaQuestAlbumProgressService
         ];
         if ($userId <= 0) return $default;
 
+        $pdo = Database::getConnection();
         try {
-            $pdo = Database::getConnection();
+            $pdo->beginTransaction();
             $this->backfillUserActivity($pdo,$userId);
             $days = $this->activeDays($pdo,$userId);
+            $this->grantDuePacks($pdo,$userId,$days);
+            $pdo->commit();
+
             $collected = $this->collectedSaints($pdo,$userId);
             $duplicates = $this->duplicateCopies($pdo,$userId);
             $mod = $days % self::DAYS_PER_PACK;
@@ -86,6 +90,7 @@ final class CrismaQuestAlbumProgressService
                 'exchangeUsedThisWeek'=>$used,
             ];
         } catch (Throwable) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
             return $default;
         }
     }
@@ -136,7 +141,7 @@ final class CrismaQuestAlbumProgressService
 
                 $pdo->prepare(
                     'UPDATE cq_user_cards
-                     SET quantity=quantity-:take
+                     SET quantity = quantity - :take
                      WHERE user_id=:u AND card_edition_id=:e'
                 )->execute([
                     'take'=>$take,
