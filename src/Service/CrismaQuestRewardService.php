@@ -107,13 +107,14 @@ final class CrismaQuestRewardService
 
     public function grantCard(PDO $pdo, int $userId, string $rewardKey, ?string $saintSlug = null, bool $preferNew = true, string $editionType = 'normal'): ?array
     {
-        if ($saintSlug === null && $preferNew && $editionType === 'normal' && $this->normalCollectionComplete($pdo,$userId)) {
-            return $this->grantIlluminatedCard($pdo,$userId,$rewardKey);
-        }
-
-        // O reward_key independente impede duplicação mesmo se o endpoint for reenviado.
+        // O marcador vem primeiro: uma recompensa antiga já consumida nunca pode
+        // reaparecer como iluminada só porque o álbum foi completado depois.
         if (!$this->markOnce($pdo, $userId, 'card:' . $rewardKey, 'Carta do Álbum')) {
             return null;
+        }
+
+        if ($saintSlug === null && $preferNew && $editionType === 'normal' && $this->normalCollectionComplete($pdo,$userId)) {
+            return $this->grantIlluminatedCard($pdo,$userId,$rewardKey);
         }
 
         if ($saintSlug !== null) {
