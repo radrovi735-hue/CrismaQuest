@@ -77,6 +77,7 @@ final class CrismaQuestAlbumService
                 'total'=>$total,
                 'progressPercent'=>$total > 0 ? (int)floor(($collected/$total)*100) : 0,
                 'stateCounts'=>$stateCounts,
+                'albumProgress'=>(new CrismaQuestAlbumProgressService())->getProgress($userId),
             ];
         } catch (Throwable) {
             return $this->emptyAlbum();
@@ -88,26 +89,17 @@ final class CrismaQuestAlbumService
         $pdo = Database::getConnection();
         $count = $pdo->prepare('SELECT COUNT(*) FROM cq_user_cards WHERE user_id=:user_id');
         $count->execute(['user_id'=>$userId]);
-        if ((int)$count->fetchColumn() > 0) {
-            return;
-        }
+        if ((int)$count->fetchColumn() > 0) return;
 
-        $edition = $pdo->query(
-            'SELECT e.id
-             FROM cq_card_editions e
-             INNER JOIN cq_saint_cards c ON c.id=e.card_id
-             WHERE c.card_number=1 AND e.edition_type="normal" AND e.active=1
-             LIMIT 1'
-        )->fetchColumn();
-        if (!$edition) {
-            return;
+        try {
+            $pdo->beginTransaction();
+            (new CrismaQuestRewardService())->grantCard(
+                $pdo,$userId,'starter-card','sao-carlo-acutis',true
+            );
+            $pdo->commit();
+        } catch (Throwable) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
         }
-
-        $insert = $pdo->prepare(
-            'INSERT IGNORE INTO cq_user_cards (user_id,card_edition_id,quantity,first_obtained_at)
-             VALUES (:user_id,:edition_id,1,NOW())'
-        );
-        $insert->execute(['user_id'=>$userId,'edition_id'=>(int)$edition]);
     }
 
     private function emptyAlbum(): array
@@ -118,6 +110,11 @@ final class CrismaQuestAlbumService
             'total'=>0,
             'progressPercent'=>0,
             'stateCounts'=>['locked'=>0,'collected'=>0,'repeated'=>0,'illuminated'=>0],
+            'albumProgress'=>[
+                'activeDays'=>0,'daysIntoPack'=>0,'daysUntilPack'=>3,'packsEarned'=>0,
+                'collected'=>0,'duplicates'=>0,'finalProtection'=>false,
+                'exchangeUnlocked'=>false,'exchangeAvailable'=>false,'exchangeUsedThisWeek'=>false,
+            ],
         ];
     }
 }
