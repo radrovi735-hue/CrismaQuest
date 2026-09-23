@@ -82,7 +82,7 @@
         <h2>${esc(type === 'card' && payload.name ? payload.name : item.title)}</h2>
         <p>${esc(item.message || '')}</p>
         <div class="cq-reward-actions">
-          ${payload.url ? `<a class="cq-reward-secondary" href="${esc(payload.url)}">${type === 'card' || type === 'album_complete' ? 'Ver no álbum' : 'Ver agora'}</a>` : ''}
+          ${payload.url ? `<a class="cq-reward-secondary" data-cq-reward-link href="${esc(payload.url)}">${type === 'card' || type === 'album_complete' ? 'Ver no álbum' : 'Ver agora'}</a>` : ''}
           <button type="button" class="cq-reward-primary" data-cq-reward-continue>Continuar</button>
         </div>
       </div>
@@ -111,6 +111,12 @@
         };
 
         overlay.querySelector('[data-cq-reward-continue]')?.addEventListener('click', close);
+        overlay.querySelector('[data-cq-reward-link]')?.addEventListener('click', async event => {
+          event.preventDefault();
+          const href = event.currentTarget.getAttribute('href');
+          await markSeen(item.id);
+          window.location.href = href || '/studenti/classe/dashboard?view=album';
+        });
         overlay.addEventListener('click', event => {
           if (event.target === overlay) close();
         });
