@@ -15,11 +15,13 @@ final class CrismaQuestGameService
 
     private CrismaQuestRewardService $rewards;
     private CrismaQuestStreakService $streaks;
+    private CrismaQuestAlbumProgressService $albumProgress;
 
     public function __construct()
     {
         $this->rewards = new CrismaQuestRewardService();
         $this->streaks = new CrismaQuestStreakService();
+        $this->albumProgress = new CrismaQuestAlbumProgressService();
     }
 
     public function getStudentPageData(?int $step = null): array
@@ -171,12 +173,11 @@ final class CrismaQuestGameService
             $specialMessage = null;
             if (str_starts_with($special, 'card:')) {
                 $slug = substr($special, 5);
-                $card = $this->rewards->grantCard(
+                $card = $this->rewards->grantNarrativeCard(
                     $pdo,
                     $ctx['userId'],
                     'mission-special-' . $missionId,
-                    $slug,
-                    true
+                    $slug
                 );
                 if ($card) $specialMessage = ' Carta conquistada: ' . $card['name'] . '.';
             } elseif (str_starts_with($special, 'badge:')) {
@@ -187,6 +188,8 @@ final class CrismaQuestGameService
             }
 
             $pdo->commit();
+
+            $albumResult = $this->albumProgress->recordActiveDay($ctx['userId'],$today);
 
             $streak = ((int)$mission['grants_streak'] === 1)
                 ? $this->streaks->qualifyActivity('cq_mission', $missionId, $ctx['userId'])
@@ -200,9 +203,12 @@ final class CrismaQuestGameService
                 $message .= ' Inclui +' . (int)$mission['bonus_xp_correct'] . ' XP pelo acerto.';
             }
             if ($specialMessage) $message .= $specialMessage;
+            if ((int)($albumResult['packsAwarded'] ?? 0) > 0) {
+                $message .= ' Pacote da Jornada liberado: novas cartas foram para o seu álbum.';
+            }
             if ($milestones !== []) $message .= ' ' . implode(' ', $milestones);
 
-            return $this->success($message) + ['reward'=>$reward,'streak'=>$streak];
+            return $this->success($message) + ['reward'=>$reward,'streak'=>$streak,'album'=>$albumResult];
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             return $this->error($e->getMessage() ?: 'Não foi possível concluir a missão.');
@@ -276,6 +282,8 @@ final class CrismaQuestGameService
             }
             $pdo->commit();
 
+            $albumResult = $this->albumProgress->recordActiveDay($ctx['userId'],$today);
+
             $streak = $this->streaks->qualifyActivity('cq_spark', $today, $ctx['userId']);
             $milestones = $this->processStreakMilestones($ctx, $streak);
             $this->evaluateBadges($ctx);
@@ -283,8 +291,11 @@ final class CrismaQuestGameService
             $message = $xp > 0
                 ? 'Centelha concluída: +' . $xp . ' XP e +' . $lumens . ' Lúmen.'
                 : 'Centelha concluída. Sua Chama continua acesa, sem recompensa extra porque você já recebeu as 3 Centelhas premiadas da semana.';
+            if ((int)($albumResult['packsAwarded'] ?? 0) > 0) {
+                $message .= ' Pacote da Jornada liberado: novas cartas foram para o seu álbum.';
+            }
             if ($milestones !== []) $message .= ' ' . implode(' ', $milestones);
-            return $this->success($message);
+            return $this->success($message) + ['album'=>$albumResult];
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             return $this->error($e->getMessage() ?: 'Não foi possível concluir a Centelha.');
