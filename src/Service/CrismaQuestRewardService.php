@@ -128,7 +128,8 @@ final class CrismaQuestRewardService
             $card = $stmt->fetch(PDO::FETCH_ASSOC);
         } else {
             $sql =
-                'SELECT ce.id, sc.name, sc.slug, ce.edition_type
+                'SELECT ce.id, sc.card_number, sc.name, sc.slug, sc.image_path, ce.edition_type,
+                        COALESCE(uc.quantity,0) current_quantity
                  FROM cq_card_editions ce
                  JOIN cq_saint_cards sc ON sc.id=ce.card_id
                  LEFT JOIN cq_user_cards uc ON uc.user_id=:u AND uc.card_edition_id=ce.id
@@ -179,7 +180,7 @@ final class CrismaQuestRewardService
     {
         // O marcador da tentativa principal já foi criado. Aqui apenas escolhemos e entregamos.
         $stmt = $pdo->prepare(
-            'SELECT ce.id, sc.name, sc.slug, ce.edition_type
+            'SELECT ce.id, sc.card_number, sc.name, sc.slug, sc.image_path, ce.edition_type
              FROM cq_card_editions ce
              JOIN cq_saint_cards sc ON sc.id=ce.card_id
              WHERE ce.edition_type=:edition AND ce.active=1 AND sc.active=1
@@ -194,6 +195,16 @@ final class CrismaQuestRewardService
              VALUES (:u,:e,1)
              ON DUPLICATE KEY UPDATE quantity=quantity+1'
         )->execute(['u'=>$userId,'e'=>(int)$card['id']]);
+
+        $qty = $pdo->prepare(
+            'SELECT quantity FROM cq_user_cards
+             WHERE user_id=:u AND card_edition_id=:e LIMIT 1'
+        );
+        $qty->execute(['u'=>$userId,'e'=>(int)$card['id']]);
+        $this->notifications->notifyCard(
+            $pdo,$userId,$card,'card:' . $rewardKey,(int)$qty->fetchColumn() === 1
+        );
+
         return $card;
     }
 
