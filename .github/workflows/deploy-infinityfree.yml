@@ -91,6 +91,15 @@ jobs:
             routes/crismaquest.php \
             sql/crismaquest/005_gameplay_seed.sql \
             src/Service/CrismaQuestBootstrapService.php \
+            public/js/crismaquest-reward-notifications.js \
+            public/views/studenti/album.php \
+            src/Controller/CrismaQuestNotificationController.php \
+            src/Service/CrismaQuestSocialService.php \
+            src/Service/CrismaQuestAlbumService.php \
+            src/Service/CrismaQuestRewardService.php \
+            src/Service/CrismaQuestAlbumProgressService.php \
+            src/Service/CrismaQuestNotificationService.php \
+            sql/crismaquest/006_album_progression.sql \
             src/Service/StudentDashboardService.php \
             src/Service/CrismaQuestAttendanceService.php \
             public/views/docenti/crismaquestGame.php \
