@@ -3,6 +3,7 @@
 use App\Controller\CrismaQuestSocialController;
 use App\Controller\CrismaQuestGameSetupController;
 use App\Controller\CrismaQuestGameController;
+use App\Controller\CrismaQuestNotificationController;
 
 // Recursos próprios do CrismaQuest. Mantidos separados do upstream ChronoQuest.
 $router->get('/studenti/correio', [CrismaQuestSocialController::class, 'index']);
@@ -29,6 +30,9 @@ $router->post('/studenti/baus/{id}/abrir', [CrismaQuestGameController::class, 'c
 $router->post('/studenti/chama/intercessao', [CrismaQuestGameController::class, 'sendIntercession']);
 $router->post('/studenti/chama/intercessao/{id}/usar', [CrismaQuestGameController::class, 'useIntercession']);
 $router->post('/studenti/chama/rosario', [CrismaQuestGameController::class, 'useRosary']);
+$router->post('/studenti/album/trocar-repetidas', [CrismaQuestGameController::class, 'exchangeAlbumDuplicates']);
+$router->get('/studenti/recompensas/pendentes', [CrismaQuestNotificationController::class, 'pending']);
+$router->post('/studenti/recompensas/{id}/vista', [CrismaQuestNotificationController::class, 'seen']);
 
 $router->get('/docenti/jogo', [CrismaQuestGameController::class, 'teacherIndex']);
 $router->get('/docenti/jogo/previa', [CrismaQuestGameController::class, 'teacherPreview']);
