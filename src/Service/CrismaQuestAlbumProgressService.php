@@ -29,6 +29,7 @@ final class CrismaQuestAlbumProgressService
 
         try {
             $pdo->beginTransaction();
+            $this->rewards->ensureStarterCard($pdo,$userId);
             $this->backfillUserActivity($pdo,$userId);
 
             $stmt = $pdo->prepare(
@@ -67,6 +68,7 @@ final class CrismaQuestAlbumProgressService
         $pdo = Database::getConnection();
         try {
             $pdo->beginTransaction();
+            $this->rewards->ensureStarterCard($pdo,$userId);
             $this->backfillUserActivity($pdo,$userId);
             $days = $this->activeDays($pdo,$userId);
             $this->grantDuePacks($pdo,$userId,$days);
