@@ -19,6 +19,7 @@ class CrismaQuestBootstrapService
         CrismaQuestRosterService::ensureSeeded();
         self::curateSaintCharacters($pdo);
         self::syncSaintArtwork($pdo);
+        self::ensureAlbumProgressionSchema($pdo);
 
         if (self::isCoreReady($pdo) && self::isSocialReady($pdo)) return;
 
@@ -224,6 +225,25 @@ class CrismaQuestBootstrapService
             }
         } catch (Throwable) {
             // Curadoria visual nunca deve impedir o app de abrir.
+        }
+    }
+
+    private static function ensureAlbumProgressionSchema(PDO $pdo): void
+    {
+        try {
+            $q = $pdo->query(
+                "SELECT COUNT(*) FROM information_schema.tables
+                 WHERE table_schema=DATABASE()
+                   AND table_name IN ('cq_album_activity','cq_user_notifications')"
+            );
+            if ((int)$q->fetchColumn() === 2) return;
+
+            self::importSqlFile(
+                $pdo,
+                dirname(__DIR__,2) . '/sql/crismaquest/006_album_progression.sql'
+            );
+        } catch (Throwable) {
+            // Extensão aditiva: uma falha temporária não derruba o restante do app.
         }
     }
 
