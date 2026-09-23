@@ -177,6 +177,16 @@ final class CrismaQuestGameController
         $this->teacherRedirect($result);
     }
 
+    public function exchangeAlbumDuplicates(): void
+    {
+        $permission = new PermissionService();
+        $userId = (int)($permission->getCurrentUserId() ?? 0);
+        $result = (new \App\Service\CrismaQuestAlbumProgressService())->exchangeDuplicatesForNew($userId);
+        Flash::add(($result['success'] ?? false) ? 'success' : 'danger', (string)($result['message'] ?? 'Operação não concluída.'));
+        header('Location: /studenti/classe/dashboard?view=album');
+        exit;
+    }
+
     public function awardCards(): void
     {
         $result = (new CrismaQuestGameService())->awardCards($_POST);
