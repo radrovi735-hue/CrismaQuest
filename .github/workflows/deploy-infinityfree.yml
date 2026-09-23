@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - feature/crismaquest-auth-final
+      - work/album-progression-20260923
 
 concurrency:
   group: crismaquest-infinityfree-production
