@@ -2,6 +2,11 @@
 $album = $crismaquestAlbum ?? ['cards'=>[],'collected'=>0,'total'=>0,'progressPercent'=>0,'stateCounts'=>[]];
 $cards = $album['cards'] ?? [];
 $stateCounts = $album['stateCounts'] ?? ['locked'=>0,'collected'=>0,'repeated'=>0,'illuminated'=>0];
+$albumProgress = $album['albumProgress'] ?? [
+    'activeDays'=>0,'daysIntoPack'=>0,'daysUntilPack'=>3,'packsEarned'=>0,
+    'duplicates'=>0,'finalProtection'=>false,'exchangeUnlocked'=>false,
+    'exchangeAvailable'=>false,'exchangeUsedThisWeek'=>false,
+];
 $h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 $firstOwned = null;
 $details = [];
@@ -41,6 +46,39 @@ foreach ($cards as $candidate) {
     <span class="cq-state-pill is-repeat"><b><?= (int)($stateCounts['repeated'] ?? 0) ?></b> repetidas</span>
     <span class="cq-state-pill is-light"><b><?= (int)($stateCounts['illuminated'] ?? 0) ?></b> iluminadas</span>
   </div>
+
+  <section class="cq-album-trade" style="margin-bottom:16px">
+    <div>
+      <strong>Pacote da Jornada · <?= (int)($albumProgress['daysIntoPack'] ?? 0) ?>/3 dias ativos</strong>
+      <span>
+        A cada 3 dias com missão ou Centelha concluída, você recebe 2 cartas:
+        1 aleatória e 1 nova garantida.
+        <?php if (!empty($albumProgress['finalProtection'])): ?>
+          <b>Proteção final ativa: com 35/40, as duas cartas do pacote priorizam as que faltam.</b>
+        <?php endif; ?>
+      </span>
+    </div>
+    <span class="cq-progress-chip"><?= (int)($albumProgress['packsEarned'] ?? 0) ?> pacotes</span>
+  </section>
+
+  <?php if (!empty($albumProgress['exchangeUnlocked'])): ?>
+    <section class="cq-album-trade" style="margin-bottom:16px">
+      <div>
+        <strong>Troca de repetidas · <?= (int)($albumProgress['duplicates'] ?? 0) ?> cópias disponíveis</strong>
+        <span>Com 30/40 cartas, 5 cópias repetidas podem virar 1 carta nova, uma vez por semana.</span>
+      </div>
+      <?php if (!empty($albumProgress['exchangeAvailable'])): ?>
+        <form method="post" action="/studenti/album/trocar-repetidas" style="margin:0">
+          <input type="hidden" name="csrf_token" value="<?= \App\Service\CrismaQuestGameAccess::token() ?>">
+          <button type="submit" class="cq-primary-btn" style="border:0">Trocar 5 por 1 nova</button>
+        </form>
+      <?php elseif (!empty($albumProgress['exchangeUsedThisWeek'])): ?>
+        <span class="cq-progress-chip">troca semanal já usada</span>
+      <?php else: ?>
+        <span class="cq-progress-chip">junte 5 repetidas</span>
+      <?php endif; ?>
+    </section>
+  <?php endif; ?>
 
   <div class="cq-collection-toolbar" aria-label="Ferramentas do álbum">
     <input id="cqAlbumSearch" type="search" placeholder="Buscar santo ou categoria" autocomplete="off">
