@@ -16,6 +16,7 @@ final class CrismaQuestAlbumService
 
         try {
             $this->grantStarterCardIfEmpty($userId);
+            $albumProgress = (new CrismaQuestAlbumProgressService())->getProgress($userId);
             $stmt = Database::getConnection()->prepare(
                 'SELECT c.id,c.card_number,c.slug,c.name,c.category,c.short_bio,c.feast_date,c.short_teaching,c.image_path,c.image_license,
                         normal.id AS edition_id,
@@ -77,7 +78,7 @@ final class CrismaQuestAlbumService
                 'total'=>$total,
                 'progressPercent'=>$total > 0 ? (int)floor(($collected/$total)*100) : 0,
                 'stateCounts'=>$stateCounts,
-                'albumProgress'=>(new CrismaQuestAlbumProgressService())->getProgress($userId),
+                'albumProgress'=>$albumProgress,
             ];
         } catch (Throwable) {
             return $this->emptyAlbum();
@@ -87,15 +88,9 @@ final class CrismaQuestAlbumService
     private function grantStarterCardIfEmpty(int $userId): void
     {
         $pdo = Database::getConnection();
-        $count = $pdo->prepare('SELECT COUNT(*) FROM cq_user_cards WHERE user_id=:user_id');
-        $count->execute(['user_id'=>$userId]);
-        if ((int)$count->fetchColumn() > 0) return;
-
         try {
             $pdo->beginTransaction();
-            (new CrismaQuestRewardService())->grantCard(
-                $pdo,$userId,'starter-card','sao-carlo-acutis',true
-            );
+            (new CrismaQuestRewardService())->ensureStarterCard($pdo,$userId);
             $pdo->commit();
         } catch (Throwable) {
             if ($pdo->inTransaction()) $pdo->rollBack();
