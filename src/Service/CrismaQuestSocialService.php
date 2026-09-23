@@ -153,8 +153,12 @@ final class CrismaQuestSocialService
             $pdo->beginTransaction();
             if ($this->cardQuantity($pdo, $ctx['userId'], $editionId, true) < 2) throw new \RuntimeException('Somente cartas repetidas podem ser presenteadas.');
             $this->transferCard($pdo, $ctx['userId'], $recipient, $editionId);
-            $pdo->prepare('INSERT INTO cq_gifts (class_id,sender_user_id,recipient_user_id,card_edition_id,cost_lumens,note) VALUES (:c,:s,:r,:e,0,:n)')
-                ->execute(['c' => $ctx['classId'], 's' => $ctx['userId'], 'r' => $recipient, 'e' => $editionId, 'n' => $note === '' ? null : $note]);
+            $giftInsert = $pdo->prepare('INSERT INTO cq_gifts (class_id,sender_user_id,recipient_user_id,card_edition_id,cost_lumens,note) VALUES (:c,:s,:r,:e,0,:n)');
+            $giftInsert->execute(['c' => $ctx['classId'], 's' => $ctx['userId'], 'r' => $recipient, 'e' => $editionId, 'n' => $note === '' ? null : $note]);
+            $giftId = (int)$pdo->lastInsertId();
+            (new CrismaQuestNotificationService())->notifyCardEdition(
+                $pdo,$recipient,$editionId,'gift-card:' . $giftId,'Você recebeu uma carta presenteada por um colega.'
+            );
             $pdo->commit();
             return $this->success('Carta repetida presenteada com sucesso.');
         } catch (Throwable $e) {
@@ -211,6 +215,13 @@ final class CrismaQuestSocialService
             if ($this->cardQuantity($pdo, $ctx['userId'], $requested, true) < 1) throw new \RuntimeException('Você não possui mais a carta solicitada.');
             $this->transferCard($pdo, $offerer, $ctx['userId'], $offered);
             $this->transferCard($pdo, $ctx['userId'], $offerer, $requested);
+            $notify = new CrismaQuestNotificationService();
+            $notify->notifyCardEdition(
+                $pdo,$ctx['userId'],$offered,'trade-card:' . $tradeId . ':recipient','Troca concluída: esta carta entrou no seu álbum.'
+            );
+            $notify->notifyCardEdition(
+                $pdo,$offerer,$requested,'trade-card:' . $tradeId . ':offerer','Troca concluída: esta carta entrou no seu álbum.'
+            );
             $pdo->prepare('UPDATE cq_trade_offers SET status="accepted", responded_at=NOW() WHERE id=:id')->execute(['id'=>$tradeId]);
             $pdo->commit();
             return $this->success('Troca concluída. As cartas já foram transferidas.');
