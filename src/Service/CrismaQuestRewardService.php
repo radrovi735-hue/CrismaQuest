@@ -7,6 +7,13 @@ use RuntimeException;
 
 final class CrismaQuestRewardService
 {
+    private CrismaQuestNotificationService $notifications;
+
+    public function __construct()
+    {
+        $this->notifications = new CrismaQuestNotificationService();
+    }
+
     /**
      * Concede XP/Lúmens uma única vez por reward_key.
      * Deve ser chamado dentro de uma transação do chamador.
@@ -100,6 +107,10 @@ final class CrismaQuestRewardService
 
     public function grantCard(PDO $pdo, int $userId, string $rewardKey, ?string $saintSlug = null, bool $preferNew = true, string $editionType = 'normal'): ?array
     {
+        if ($saintSlug === null && $preferNew && $editionType === 'normal' && $this->normalCollectionComplete($pdo,$userId)) {
+            return $this->grantIlluminatedCard($pdo,$userId,$rewardKey);
+        }
+
         // O reward_key independente impede duplicação mesmo se o endpoint for reenviado.
         if (!$this->markOnce($pdo, $userId, 'card:' . $rewardKey, 'Carta do Álbum')) {
             return null;
@@ -107,7 +118,7 @@ final class CrismaQuestRewardService
 
         if ($saintSlug !== null) {
             $stmt = $pdo->prepare(
-                'SELECT ce.id, sc.name, sc.slug, ce.edition_type
+                'SELECT ce.id, sc.card_number, sc.name, sc.slug, sc.image_path, ce.edition_type
                  FROM cq_card_editions ce
                  JOIN cq_saint_cards sc ON sc.id=ce.card_id
                  WHERE sc.slug=:slug AND ce.edition_type=:edition AND ce.active=1 AND sc.active=1
@@ -135,7 +146,9 @@ final class CrismaQuestRewardService
             $card = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$card && $preferNew) {
-                // Coleção completa: duplicata passa a ser permitida.
+                if ($editionType === 'normal') {
+                    return $this->grantIlluminatedCard($pdo,$userId,$rewardKey);
+                }
                 return $this->grantCardFallback($pdo, $userId, $rewardKey, $editionType);
             }
         }
@@ -149,6 +162,15 @@ final class CrismaQuestRewardService
              VALUES (:u,:e,1)
              ON DUPLICATE KEY UPDATE quantity=quantity+1'
         )->execute(['u'=>$userId,'e'=>(int)$card['id']]);
+
+        $qty = $pdo->prepare(
+            'SELECT quantity FROM cq_user_cards
+             WHERE user_id=:u AND card_edition_id=:e LIMIT 1'
+        );
+        $qty->execute(['u'=>$userId,'e'=>(int)$card['id']]);
+        $this->notifications->notifyCard(
+            $pdo,$userId,$card,'card:' . $rewardKey,(int)$qty->fetchColumn() === 1
+        );
 
         return $card;
     }
@@ -175,16 +197,14 @@ final class CrismaQuestRewardService
         return $card;
     }
 
-    public function grantIlluminatedCard(PDO $pdo, int $userId, string $rewardKey): ?array
+    public function grantIlluminatedCard(PDO $pdo, int $userId, string $rewardKey, ?string $saintSlug = null): ?array
     {
         if (!$this->markOnce($pdo, $userId, 'illuminated:' . $rewardKey, 'Carta em edição iluminada')) {
             return null;
         }
 
-        // Prioriza transformar visualmente uma carta que o crismando já conhece,
-        // sem repetir uma edição iluminada enquanto houver outra opção disponível.
-        $select = $pdo->prepare(
-            'SELECT sc.id,sc.name,sc.slug,
+        $sql =
+            'SELECT sc.id,sc.card_number,sc.name,sc.slug,sc.image_path,
                     COALESCE(normal_user.quantity,0) AS normal_quantity,
                     COALESCE(illuminated_user.quantity,0) AS illuminated_quantity
              FROM cq_saint_cards sc
@@ -196,21 +216,31 @@ final class CrismaQuestRewardService
                     ON illuminated.card_id=sc.id AND illuminated.edition_type="illuminated" AND illuminated.active=1
              LEFT JOIN cq_user_cards illuminated_user
                     ON illuminated_user.card_edition_id=illuminated.id AND illuminated_user.user_id=:illuminated_user
-             WHERE sc.active=1
-             ORDER BY
+             WHERE sc.active=1 ';
+
+        $params = [
+            'normal_user'=>$userId,
+            'illuminated_user'=>$userId,
+            'seed'=>$rewardKey . ':' . $userId,
+        ];
+
+        if ($saintSlug !== null) {
+            $sql .= 'AND sc.slug=:slug ';
+            $params['slug']=$saintSlug;
+        }
+
+        $sql .=
+            'ORDER BY
                 CASE
                     WHEN COALESCE(normal_user.quantity,0)>0 AND COALESCE(illuminated_user.quantity,0)=0 THEN 0
                     WHEN COALESCE(illuminated_user.quantity,0)=0 THEN 1
                     ELSE 2
                 END,
                 CRC32(CONCAT(sc.card_number,:seed)) ASC
-             LIMIT 1'
-        );
-        $select->execute([
-            'normal_user'=>$userId,
-            'illuminated_user'=>$userId,
-            'seed'=>$rewardKey . ':' . $userId,
-        ]);
+             LIMIT 1';
+
+        $select = $pdo->prepare($sql);
+        $select->execute($params);
         $card = $select->fetch(PDO::FETCH_ASSOC);
         if (!$card) return null;
 
@@ -233,12 +263,40 @@ final class CrismaQuestRewardService
              ON DUPLICATE KEY UPDATE quantity=quantity+1'
         )->execute(['u'=>$userId,'e'=>$editionId]);
 
-        return [
+        $result = [
             'id'=>$editionId,
+            'card_number'=>(int)$card['card_number'],
             'name'=>$card['name'],
             'slug'=>$card['slug'],
+            'image_path'=>$card['image_path'],
             'edition_type'=>'illuminated',
         ];
+
+        $this->notifications->notifyCard(
+            $pdo,$userId,$result,'illuminated:' . $rewardKey,
+            (int)$card['illuminated_quantity'] === 0
+        );
+
+        return $result;
+    }
+
+    public function grantNarrativeCard(PDO $pdo, int $userId, string $rewardKey, string $saintSlug): ?array
+    {
+        if ($saintSlug === 'sao-carlo-acutis') {
+            return $this->grantIlluminatedCard($pdo,$userId,$rewardKey,$saintSlug);
+        }
+
+        if ($saintSlug === 'santa-joana-darc') {
+            if (!$this->hasSaintEdition($pdo,$userId,$saintSlug,'normal')) {
+                return $this->grantCard($pdo,$userId,$rewardKey,$saintSlug,true);
+            }
+            if (!$this->hasSaintEdition($pdo,$userId,$saintSlug,'illuminated')) {
+                return $this->grantIlluminatedCard($pdo,$userId,$rewardKey,$saintSlug);
+            }
+            return $this->grantCard($pdo,$userId,$rewardKey,null,true);
+        }
+
+        return $this->grantCard($pdo,$userId,$rewardKey,$saintSlug,true);
     }
 
     public function grantCosmetic(PDO $pdo, int $userId, string $slug, string $rewardKey): bool
@@ -277,6 +335,38 @@ final class CrismaQuestRewardService
             'INSERT IGNORE INTO cq_user_badges (user_id,badge_id) VALUES (:u,:b)'
         );
         $insert->execute(['u'=>$userId,'b'=>$id]);
-        return $insert->rowCount() > 0;
+        $granted = $insert->rowCount() > 0;
+        if ($granted) $this->notifications->notifyBadge($pdo,$userId,$slug);
+        return $granted;
+    }
+
+    private function normalCollectionComplete(PDO $pdo, int $userId): bool
+    {
+        $total = (int)$pdo->query('SELECT COUNT(*) FROM cq_saint_cards WHERE active=1')->fetchColumn();
+        if ($total <= 0) return false;
+
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(DISTINCT ce.card_id)
+             FROM cq_user_cards uc
+             JOIN cq_card_editions ce ON ce.id=uc.card_edition_id
+             JOIN cq_saint_cards sc ON sc.id=ce.card_id
+             WHERE uc.user_id=:u AND uc.quantity>0 AND sc.active=1'
+        );
+        $stmt->execute(['u'=>$userId]);
+        return (int)$stmt->fetchColumn() >= $total;
+    }
+
+    private function hasSaintEdition(PDO $pdo, int $userId, string $slug, string $edition): bool
+    {
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*)
+             FROM cq_user_cards uc
+             JOIN cq_card_editions ce ON ce.id=uc.card_edition_id
+             JOIN cq_saint_cards sc ON sc.id=ce.card_id
+             WHERE uc.user_id=:u AND uc.quantity>0
+               AND sc.slug=:slug AND ce.edition_type=:edition'
+        );
+        $stmt->execute(['u'=>$userId,'slug'=>$slug,'edition'=>$edition]);
+        return (int)$stmt->fetchColumn() > 0;
     }
 }
