@@ -292,6 +292,14 @@ final class CrismaQuestRewardService
         return $result;
     }
 
+    public function ensureStarterCard(PDO $pdo, int $userId): ?array
+    {
+        if ($this->hasSaintEdition($pdo,$userId,'sao-carlo-acutis','normal')) {
+            return null;
+        }
+        return $this->grantCard($pdo,$userId,'starter-card','sao-carlo-acutis',true);
+    }
+
     public function grantNarrativeCard(PDO $pdo, int $userId, string $rewardKey, string $saintSlug): ?array
     {
         if ($saintSlug === 'sao-carlo-acutis') {
