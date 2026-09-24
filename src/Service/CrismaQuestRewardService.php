@@ -92,6 +92,24 @@ final class CrismaQuestRewardService
 
     public function markOnce(PDO $pdo, int $userId, string $rewardKey, string $description): bool
     {
+        // cq_reward_events.reward_key é globalmente único. Recompensas pessoais
+        // precisam portanto de uma chave escopada por usuário.
+        //
+        // Compatibilidade: se a versão antiga sem escopo já pertence a este
+        // usuário, consideramos a recompensa consumida. Se pertence a outro
+        // usuário, tratamos como a colisão antiga e permitimos a chave correta.
+        $legacyKey = mb_substr($rewardKey,0,190);
+        $legacy = $pdo->prepare(
+            'SELECT user_id FROM cq_reward_events WHERE reward_key=:k LIMIT 1'
+        );
+        $legacy->execute(['k'=>$legacyKey]);
+        $legacyUser = $legacy->fetchColumn();
+
+        if ($legacyUser !== false && (int)$legacyUser === $userId) {
+            return false;
+        }
+
+        $scopedKey = mb_substr('user:' . $userId . ':' . $rewardKey,0,190);
         $stmt = $pdo->prepare(
             'INSERT IGNORE INTO cq_reward_events
                 (user_id,reward_key,xp_delta,lumen_delta,description)
@@ -99,7 +117,7 @@ final class CrismaQuestRewardService
         );
         $stmt->execute([
             'u'=>$userId,
-            'k'=>mb_substr($rewardKey,0,190),
+            'k'=>$scopedKey,
             'd'=>mb_substr($description,0,255),
         ]);
         return $stmt->rowCount() > 0;
