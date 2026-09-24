@@ -11,7 +11,6 @@ on:
   push:
     branches:
       - feature/crismaquest-auth-final
-      - work/card-delivery-hotfix-20260924
 
 concurrency:
   group: crismaquest-infinityfree-production
