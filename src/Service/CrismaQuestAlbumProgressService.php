@@ -31,6 +31,7 @@ final class CrismaQuestAlbumProgressService
             $pdo->beginTransaction();
             $this->rewards->ensureStarterCard($pdo,$userId);
             $this->backfillUserActivity($pdo,$userId);
+            $this->backfillCardEntitlements($pdo,$userId);
 
             $stmt = $pdo->prepare(
                 'INSERT IGNORE INTO cq_album_activity (user_id,activity_date)
@@ -70,6 +71,7 @@ final class CrismaQuestAlbumProgressService
             $pdo->beginTransaction();
             $this->rewards->ensureStarterCard($pdo,$userId);
             $this->backfillUserActivity($pdo,$userId);
+            $this->backfillCardEntitlements($pdo,$userId);
             $days = $this->activeDays($pdo,$userId);
             $this->grantDuePacks($pdo,$userId,$days);
             $pdo->commit();
@@ -220,6 +222,66 @@ final class CrismaQuestAlbumProgressService
         $spark->execute(['u'=>$userId]);
     }
 
+    private function backfillCardEntitlements(PDO $pdo, int $userId): void
+    {
+        // 1) Missões especiais já concluídas.
+        $missions = $pdo->prepare(
+            'SELECT mc.mission_id,m.special_reward
+             FROM cq_mission_completions mc
+             JOIN cq_missions m ON m.id=mc.mission_id
+             WHERE mc.user_id=:u
+               AND m.special_reward LIKE "card:%"'
+        );
+        $missions->execute(['u'=>$userId]);
+        foreach ($missions->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $special = (string)($row['special_reward'] ?? '');
+            $slug = str_starts_with($special,'card:') ? substr($special,5) : '';
+            if ($slug === '') continue;
+            $this->rewards->grantNarrativeCard(
+                $pdo,$userId,'mission-special-' . (int)$row['mission_id'],$slug
+            );
+        }
+
+        // 2) Cartas de baús já abertos.
+        $chests = $pdo->prepare(
+            'SELECT uc.chest_id,cc.card_count,cc.guaranteed_new
+             FROM cq_user_chests uc
+             JOIN cq_chest_catalog cc ON cc.id=uc.chest_id
+             WHERE uc.user_id=:u AND cc.active=1'
+        );
+        $chests->execute(['u'=>$userId]);
+        foreach ($chests->fetchAll(PDO::FETCH_ASSOC) ?: [] as $chest) {
+            $count = (int)$chest['card_count'];
+            for ($i=1; $i<=$count; $i++) {
+                $this->rewards->grantCard(
+                    $pdo,
+                    $userId,
+                    'chest-' . (int)$chest['chest_id'] . '-card-' . $i,
+                    null,
+                    (int)$chest['guaranteed_new'] === 1 && $i === 1
+                );
+            }
+        }
+
+        // 3) Cartas de marcos de Chama já alcançados.
+        $streak = $pdo->prepare(
+            'SELECT longest_streak FROM cq_streaks WHERE user_id=:u LIMIT 1'
+        );
+        $streak->execute(['u'=>$userId]);
+        $longest = (int)($streak->fetchColumn() ?: 0);
+
+        if ($longest >= 14) {
+            $this->rewards->grantCard(
+                $pdo,$userId,'streak-14-card',null,true
+            );
+        }
+        if ($longest >= 60) {
+            $this->rewards->grantIlluminatedCard(
+                $pdo,$userId,'streak-60'
+            );
+        }
+    }
+
     private function activeDays(PDO $pdo, int $userId): int
     {
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM cq_album_activity WHERE user_id=:u');
@@ -256,11 +318,14 @@ final class CrismaQuestAlbumProgressService
 
     private function exchangeUsedThisWeek(PDO $pdo, int $userId): bool
     {
+        $legacy = 'duplicate-exchange:' . $this->weekKey();
+        $scoped = mb_substr('user:' . $userId . ':' . $legacy,0,190);
         $stmt = $pdo->prepare(
             'SELECT COUNT(*) FROM cq_reward_events
-             WHERE user_id=:u AND reward_key=:k'
+             WHERE user_id=:u
+               AND (reward_key=:legacy OR reward_key=:scoped)'
         );
-        $stmt->execute(['u'=>$userId,'k'=>'duplicate-exchange:' . $this->weekKey()]);
+        $stmt->execute(['u'=>$userId,'legacy'=>$legacy,'scoped'=>$scoped]);
         return (int)$stmt->fetchColumn() > 0;
     }
 
